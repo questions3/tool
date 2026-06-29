@@ -6,7 +6,8 @@
 
 -- 0. Утилита: авто-обновление updated_at -------------------------------------
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql
+set search_path = '' as $$
 begin
   new.updated_at = now();
   return new;
@@ -116,6 +117,11 @@ returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.admins a where a.user_id = auth.uid());
 $$;
+
+-- is_admin() нужен только роли authenticated (в RLS-политиках записи).
+-- Закрываем доступ анонимам через /rest/v1/rpc (security advisor 0028).
+revoke execute on function public.is_admin() from anon, public;
+grant execute on function public.is_admin() to authenticated;
 
 -- ============================================================
 -- 7. RLS
