@@ -1,46 +1,73 @@
-/** Язык контента и интерфейса */
-export type Lang = 'ru' | 'pl'
+/**
+ * Язык контента и интерфейса — код языка (`'ru'`, `'pl'`, `'de'`, …).
+ *
+ * Раньше это был жёсткий union `'ru' | 'pl'`. Теперь языки — данные
+ * (таблица `languages` в Supabase / `fallbackLanguages` в content.ts),
+ * поэтому тип открытый: `string`.
+ */
+export type Lang = string
 
-/** Этап разговора, на котором всплыло возражение */
-export type StageId = 'intro' | 'before_lk' | 'after_lk'
+/**
+ * Идентификаторы возражения и этапа — раньше были union'ами, теперь это
+ * slug'и из БД (`'no_funds'`, `'intro'`, …). Оставлены как алиасы для
+ * читаемости сигнатур.
+ */
+export type ObjectionId = string
+export type StageId = string
 
-/** Идентификатор возражения */
-export type ObjectionId = 'no_funds' | 'consult' | 'not_interested' | 'call_later'
+/** Локализованная строка: код языка → текст. Ключи могут отсутствовать. */
+export type Localized = Record<string, string>
 
-/** Локализованная строка (RU + PL) */
-export type Localized = Record<Lang, string>
+/** Язык контента («категория»). */
+export interface Language {
+  code: string
+  name: string
+  isEnabled: boolean
+  sortOrder: number
+}
 
-/** Ветка «what-if»: условие из диалога → реакция агента */
+/** Ветка «what-if»: условие из диалога → реакция агента. */
 export interface Branch {
+  /** id из БД (для статических данных может отсутствовать). */
+  id?: string
   /** Заголовок варианта: «Вариант A» и т.п. */
   label: Localized
-  /** Условие — что уже было / не было в диалоге */
+  /** Условие — что уже было / не было в диалоге. */
   condition: Localized
-  /** Готовый ответ под это условие */
+  /** Готовый ответ под это условие. */
   response: Localized
 }
 
-/** Готовый скрипт под (возражение × этап) */
+/** Готовый скрипт под (возражение × этап). */
 export interface Rebuttal {
+  id?: string
   objectionId: ObjectionId
-  stage: StageId
-  /** Базовый готовый ответ */
+  stageId: StageId
+  /** Базовый готовый ответ. */
   answer: Localized
-  /** Ветки what-if (до 3) */
+  /** Ветки what-if. */
   branches: Branch[]
-  /** Контент-заглушка до загрузки реальных скриптов */
+  /** Контент-заглушка до загрузки реальных скриптов. */
   draft?: boolean
 }
 
 export interface Objection {
   id: ObjectionId
+  /** Стабильный slug (он же используется как id в навигации). */
+  slug?: string
   label: Localized
-  /** Короткая подпись-подсказка */
+  /** Короткая подпись-подсказка. */
   hint: Localized
+  /** Метаданные для админки (из БД). */
+  isEnabled?: boolean
+  sortOrder?: number
 }
 
 export interface Stage {
   id: StageId
+  slug?: string
   label: Localized
   hint: Localized
+  isEnabled?: boolean
+  sortOrder?: number
 }

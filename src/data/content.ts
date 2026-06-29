@@ -1,11 +1,20 @@
 import type {
   Branch,
+  Language,
   Objection,
   ObjectionId,
   Rebuttal,
   Stage,
   StageId,
 } from '../types'
+
+/* ─────────────────────────────────────────────────────────
+ * ЯЗЫКИ («категории») — офлайн-фолбэк, пока не настроен Supabase
+ * ───────────────────────────────────────────────────────── */
+export const fallbackLanguages: Language[] = [
+  { code: 'ru', name: 'Русский', isEnabled: true, sortOrder: 0 },
+  { code: 'pl', name: 'Polski', isEnabled: true, sortOrder: 1 },
+]
 
 /* ─────────────────────────────────────────────────────────
  * ВОЗРАЖЕНИЯ (Шаг 1)
@@ -132,7 +141,7 @@ function makeBranches(o: ObjectionId, s: StageId): Branch[] {
 function draftRebuttal(objectionId: ObjectionId, stage: StageId): Rebuttal {
   return {
     objectionId,
-    stage,
+    stageId: stage,
     answer: {
       ru: `[БАЗОВЫЙ СКРИПТ · ${objLabelRu[objectionId]} · ${stageLabelRu[stage]}] Здесь будет готовый ответ агента: присоединение → аргумент → вопрос-перехват. Подставится из материалов заказчика.`,
       pl: `[SKRYPT BAZOWY · ${objLabelPl[objectionId]} · ${stageLabelPl[stage]}] Tu pojawi się gotowa odpowiedź agenta: dołączenie → argument → pytanie. Z materiałów klienta.`,
@@ -145,7 +154,7 @@ function draftRebuttal(objectionId: ObjectionId, stage: StageId): Rebuttal {
 /** Полностью заполненный пример — «нет денег» на этапе «До ЛК» */
 const noFundsBeforeLk: Rebuttal = {
   objectionId: 'no_funds',
-  stage: 'before_lk',
+  stageId: 'before_lk',
   answer: {
     ru: 'Понимаю вас — вопрос денег всегда важен, и хорошо, что вы об этом сразу говорите. Смотрите: сейчас в личном кабинете мы как раз подбираем сумму под ваш бюджет, а не наоборот. Давайте я покажу вариант с минимальным входом — вы ничего не теряете, просто увидите цифры. Скажите, какая сумма в месяц была бы для вас комфортной?',
     pl: 'Rozumiem — kwestia pieniędzy zawsze jest ważna i dobrze, że mówi Pan/Pani o tym od razu. Proszę spojrzeć: na koncie klienta dobieramy kwotę pod Pana/Pani budżet, a nie odwrotnie. Pokażę wariant z minimalnym wkładem — nic Pan/Pani nie traci, po prostu zobaczy liczby. Jaka kwota miesięcznie byłaby komfortowa?',
@@ -208,7 +217,9 @@ export function getRebuttal(
   objectionId: ObjectionId,
   stage: StageId,
 ): Rebuttal | undefined {
-  return rebuttals.find((r) => r.objectionId === objectionId && r.stage === stage)
+  return rebuttals.find(
+    (r) => r.objectionId === objectionId && r.stageId === stage,
+  )
 }
 
 export function getObjection(id: ObjectionId): Objection | undefined {

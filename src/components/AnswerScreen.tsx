@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Lang, Rebuttal } from '../types'
-import { t } from '../i18n/ui'
+import { pick, t } from '../i18n/ui'
 
 interface Props {
   lang: Lang
@@ -40,7 +40,7 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
       {/* Базовый скрипт */}
       <section className="mt-6">
         <SectionTitle>{t('baseAnswer', lang)}</SectionTitle>
-        <ScriptCard lang={lang} text={rebuttal.answer[lang]} accent />
+        <ScriptCard lang={lang} text={pick(rebuttal.answer, lang)} accent />
       </section>
 
       {/* Ветви what-if */}
@@ -55,17 +55,17 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
               >
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="text-base font-semibold text-accent">
-                    {b.label[lang]}
+                    {pick(b.label, lang)}
                   </span>
                   <span className="text-sm text-slate-500">
                     <span className="font-semibold text-slate-700">
                       {t('condition', lang)}:
                     </span>{' '}
-                    {b.condition[lang]}
+                    {pick(b.condition, lang)}
                   </span>
                 </div>
                 <div className="mt-3">
-                  <ScriptCard lang={lang} text={b.response[lang]} />
+                  <ScriptCard lang={lang} text={pick(b.response, lang)} />
                 </div>
               </div>
             ))}

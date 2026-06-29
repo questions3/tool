@@ -1,0 +1,233 @@
+import { useState } from 'react'
+import type { Language, Localized, Objection, Stage } from '../../types'
+import type { TermInput } from '../../data/repository'
+import { pick } from '../../i18n/ui'
+import { LocalizedInput } from '../components/LocalizedInput'
+
+type Term = Objection | Stage
+
+interface DraftTerm {
+  id?: string
+  slug: string
+  label: Localized
+  hint: Localized
+  isEnabled: boolean
+  sortOrder: number
+}
+
+interface Props {
+  title: string
+  /** Слово в единственном числе для кнопки «Добавить …». */
+  singular: string
+  languages: Language[]
+  items: Term[]
+  onSave: (input: TermInput) => Promise<void>
+  onDelete: (id: string) => Promise<void>
+  onChanged: () => Promise<void>
+}
+
+function emptyDraft(sortOrder: number): DraftTerm {
+  return { slug: '', label: {}, hint: {}, isEnabled: true, sortOrder }
+}
+
+export function TermSection({
+  title,
+  singular,
+  languages,
+  items,
+  onSave,
+  onDelete,
+  onChanged,
+}: Props) {
+  const [draft, setDraft] = useState<DraftTerm | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function startCreate() {
+    setError(null)
+    setDraft(emptyDraft(items.length))
+  }
+
+  function startEdit(t: Term) {
+    setError(null)
+    setDraft({
+      id: t.id,
+      slug: t.slug ?? '',
+      label: t.label,
+      hint: t.hint,
+      isEnabled: t.isEnabled ?? true,
+      sortOrder: t.sortOrder ?? 0,
+    })
+  }
+
+  async function save() {
+    if (!draft) return
+    if (!draft.slug.trim()) {
+      setError('Slug обязателен (латиница, напр. no_funds).')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await onSave({ ...draft, slug: draft.slug.trim() })
+      await onChanged()
+      setDraft(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove(t: Term) {
+    if (!confirm(`Удалить «${pick(t.label, 'ru') || t.slug}»?`)) return
+    setBusy(true)
+    try {
+      await onDelete(t.id)
+      await onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <button
+          onClick={startCreate}
+          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+        >
+          + Добавить {singular}
+        </button>
+      </div>
+
+      <ul className="space-y-2">
+        {items.map((t) => (
+          <li
+            key={t.id}
+            className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium text-slate-900">
+                  {pick(t.label, 'ru') || <em className="text-slate-400">—</em>}
+                </span>
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                  {t.slug}
+                </code>
+                {t.isEnabled === false && (
+                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
+                    выключено
+                  </span>
+                )}
+              </div>
+              <div className="truncate text-sm text-slate-500">
+                {pick(t.hint, 'ru')}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={() => startEdit(t)}
+                className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                Изменить
+              </button>
+              <button
+                onClick={() => remove(t)}
+                disabled={busy}
+                className="rounded-md border border-red-200 px-2.5 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Удалить
+              </button>
+            </div>
+          </li>
+        ))}
+        {items.length === 0 && (
+          <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            Пока пусто
+          </li>
+        )}
+      </ul>
+
+      {draft && (
+        <div className="mt-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
+          <h3 className="font-semibold text-slate-900">
+            {draft.id ? 'Редактирование' : `Новый: ${singular}`}
+          </h3>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Slug
+              </span>
+              <input
+                value={draft.slug}
+                onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
+                placeholder="no_funds"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Порядок (sort)
+              </span>
+              <input
+                type="number"
+                value={draft.sortOrder}
+                onChange={(e) =>
+                  setDraft({ ...draft, sortOrder: Number(e.target.value) })
+                }
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+            </label>
+          </div>
+
+          <LocalizedInput
+            label="Название (label)"
+            value={draft.label}
+            languages={languages}
+            onChange={(label) => setDraft({ ...draft, label })}
+          />
+          <LocalizedInput
+            label="Подсказка (hint)"
+            value={draft.hint}
+            languages={languages}
+            onChange={(hint) => setDraft({ ...draft, hint })}
+          />
+
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={draft.isEnabled}
+              onChange={(e) =>
+                setDraft({ ...draft, isEnabled: e.target.checked })
+              }
+            />
+            Включено (показывать агентам)
+          </label>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              onClick={save}
+              disabled={busy}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+            >
+              {busy ? 'Сохранение…' : 'Сохранить'}
+            </button>
+            <button
+              onClick={() => setDraft(null)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}

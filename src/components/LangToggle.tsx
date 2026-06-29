@@ -1,25 +1,28 @@
-import type { Lang } from '../types'
+import type { Lang, Language } from '../types'
 
 interface Props {
   lang: Lang
+  languages: Language[]
   onChange: (lang: Lang) => void
 }
 
-export function LangToggle({ lang, onChange }: Props) {
+export function LangToggle({ lang, languages, onChange }: Props) {
+  if (languages.length <= 1) return null
   return (
     <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-medium">
-      {(['ru', 'pl'] as const).map((l) => (
+      {languages.map((l) => (
         <button
-          key={l}
-          onClick={() => onChange(l)}
+          key={l.code}
+          onClick={() => onChange(l.code)}
+          title={l.name}
           className={`rounded-md px-2.5 py-1 transition-colors ${
-            lang === l
+            lang === l.code
               ? 'bg-accent text-white'
               : 'text-slate-500 hover:text-slate-900'
           }`}
-          aria-pressed={lang === l}
+          aria-pressed={lang === l.code}
         >
-          {l.toUpperCase()}
+          {l.code.toUpperCase()}
         </button>
       ))}
     </div>

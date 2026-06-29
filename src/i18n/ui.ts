@@ -1,6 +1,9 @@
-import type { Lang } from '../types'
+import type { Lang, Localized } from '../types'
 
-/** Подписи интерфейса (не контент скриптов) */
+/** Базовый язык интерфейса — fallback, когда у языка нет UI-перевода. */
+export const BASE_UI_LANG = 'ru'
+
+/** Подписи интерфейса (не контент скриптов). */
 export const ui = {
   appName: { ru: 'Convvy', pl: 'Convvy' },
   appTagline: {
@@ -24,8 +27,8 @@ export const ui = {
     pl: 'Hasło udostępnia administrator',
   },
   defaultPasswordWarning: {
-    ru: 'Задан пароль по умолчанию. Установите VITE_APP_PASSWORD в Vercel.',
-    pl: 'Ustawiono hasło domyślne. Ustaw VITE_APP_PASSWORD w Vercel.',
+    ru: 'Задан пароль по умолчанию. Установите VITE_APP_PASSWORD в Netlify.',
+    pl: 'Ustawiono hasło domyślne. Ustaw VITE_APP_PASSWORD w Netlify.',
   },
 
   // Steps
@@ -52,13 +55,30 @@ export const ui = {
     pl: 'Szablon zastępczy. Finalne skrypty zostaną podstawione w to miejsce.',
   },
 
-  // Misc
-  langRu: { ru: 'RU', pl: 'RU' },
-  langPl: { ru: 'PL', pl: 'PL' },
-} as const
+  // Loading / errors
+  loading: { ru: 'Загрузка…', pl: 'Ładowanie…' },
+  loadError: {
+    ru: 'Не удалось загрузить контент. Обновите страницу.',
+    pl: 'Nie udało się załadować treści. Odśwież stronę.',
+  },
+  emptyContent: {
+    ru: 'Контент ещё не добавлен. Зайдите в админ-панель.',
+    pl: 'Treść nie została jeszcze dodana. Wejdź do panelu admina.',
+  },
+} satisfies Record<string, Localized>
 
 export type UiKey = keyof typeof ui
 
+/** Подпись интерфейса с fallback на базовый язык. */
 export function t(key: UiKey, lang: Lang): string {
-  return ui[key][lang]
+  return pick(ui[key], lang)
+}
+
+/**
+ * Достать строку из локализованного значения с fallback:
+ * нужный язык → базовый язык → первый доступный → ''.
+ */
+export function pick(value: Localized | undefined, lang: Lang): string {
+  if (!value) return ''
+  return value[lang] ?? value[BASE_UI_LANG] ?? Object.values(value)[0] ?? ''
 }

@@ -1,16 +1,23 @@
 import { useState } from 'react'
-import type { Lang } from '../types'
+import type { Lang, Language } from '../types'
 import { t } from '../i18n/ui'
 import { LangToggle } from './LangToggle'
 
 interface Props {
   lang: Lang
+  languages: Language[]
   onLangChange: (lang: Lang) => void
   login: (password: string) => boolean
   usingDefaultPassword: boolean
 }
 
-export function Login({ lang, onLangChange, login, usingDefaultPassword }: Props) {
+export function Login({
+  lang,
+  languages,
+  onLangChange,
+  login,
+  usingDefaultPassword,
+}: Props) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -26,7 +33,7 @@ export function Login({ lang, onLangChange, login, usingDefaultPassword }: Props
       <div className="w-full max-w-md fade-in">
         <div className="mb-6 flex items-center justify-between">
           <Wordmark lang={lang} />
-          <LangToggle lang={lang} onChange={onLangChange} />
+          <LangToggle lang={lang} languages={languages} onChange={onLangChange} />
         </div>
 
         <div className="card rounded-2xl border border-slate-200 bg-white p-7">

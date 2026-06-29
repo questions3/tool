@@ -1,0 +1,32 @@
+# Конфигурация деплоя на Netlify.
+# Convvy — статический Vite/React SPA, собирается в dist/.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 6 требует Node 18+. Фиксируем LTS, чтобы сборка была воспроизводимой.
+  NODE_VERSION = "20"
+
+# SPA-fallback: любой путь отдаёт index.html, чтобы клиентская навигация
+# (и будущий роутер) работала при прямом заходе/перезагрузке страницы.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Базовые security-заголовки для всех ответов.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+
+# Захэшированные ассеты Vite можно кэшировать агрессивно и навсегда.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

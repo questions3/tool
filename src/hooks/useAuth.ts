@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react'
  * Авторизация по единому паролю для всех агентов.
  *
  * Актуальный пароль задаётся переменной окружения `VITE_APP_PASSWORD`
- * (в Vercel → Project → Settings → Environment Variables). Если она не
+ * (в Netlify → Site configuration → Environment variables). Если она не
  * задана — используется пароль по умолчанию `DEFAULT_PASSWORD`.
  *
  * ВНИМАНИЕ: это статический SPA, поэтому пароль попадает в собранный
  * бандл и виден тому, кто откроет исходники страницы. Этого достаточно
  * как «калитка» для внутреннего инструмента, но это не защита секретов.
- * Для серверной проверки пароль нужно выносить в Vercel Function.
+ * Для серверной проверки пароль нужно выносить в Netlify Function.
  */
 
 const SESSION_KEY = 'convvy.session'
