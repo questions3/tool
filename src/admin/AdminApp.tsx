@@ -114,12 +114,12 @@ function Dashboard({
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-4 sm:px-6">
+        <nav className="mx-auto flex max-w-4xl flex-wrap gap-x-1 gap-y-0 px-4 sm:px-6">
           {TABS.map((tb) => (
             <button
               key={tb.id}
               onClick={() => setTab(tb.id)}
-              className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${
+              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${
                 tab === tb.id
                   ? 'border-accent text-accent'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
