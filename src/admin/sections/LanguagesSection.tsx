@@ -103,10 +103,6 @@ export function LanguagesSection({ languages, onChanged }: Props) {
           + Добавить язык
         </button>
       </div>
-      <p className="mb-4 text-sm text-slate-500">
-        Языки — это «категории» контента. Добавив язык, вы получите поле под него
-        во всех формах (возражения, этапы, скрипты).
-      </p>
 
       <ul className="space-y-2">
         {languages.map((l) => (
