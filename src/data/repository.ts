@@ -1,10 +1,20 @@
 import { supabase } from '../lib/supabase'
-import type { Language, Localized, Objection, Rebuttal, Stage } from '../types'
+import type {
+  Entry,
+  Language,
+  Localized,
+  Objection,
+  Rebuttal,
+  SectionId,
+  Stage,
+} from '../types'
 import {
+  toEntry,
   toLanguage,
   toObjection,
   toRebuttal,
   toStage,
+  type EntryRow,
   type LanguageRow,
   type ObjectionRow,
   type RebuttalRow,
@@ -60,6 +70,17 @@ export async function fetchRebuttals(): Promise<Rebuttal[]> {
     .order('sort_order')
   if (error) throw error
   return (data as RebuttalRow[]).map(toRebuttal)
+}
+
+export async function fetchEntries(section: SectionId): Promise<Entry[]> {
+  const { data, error } = await db()
+    .from('entries')
+    .select('*')
+    .eq('section', section)
+    .eq('is_enabled', true)
+    .order('sort_order')
+  if (error) throw error
+  return (data as EntryRow[]).map(toEntry)
 }
 
 export async function fetchRebuttal(

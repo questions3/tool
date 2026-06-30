@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Lang, Rebuttal } from '../types'
-import { pick, t } from '../i18n/ui'
+import { hasLang, pick, t } from '../i18n/ui'
 
 interface Props {
   lang: Lang
@@ -10,6 +10,8 @@ interface Props {
 }
 
 export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Props) {
+  // Языковой фильтр: показываем только ветки, переведённые на выбранный язык.
+  const branches = rebuttal.branches.filter((b) => hasLang(b.response, lang))
   return (
     <div className="fade-in">
       <p className="text-xs font-semibold uppercase tracking-wider text-accent">
@@ -44,11 +46,11 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
       </section>
 
       {/* Ветви what-if */}
-      {rebuttal.branches.length > 0 && (
+      {branches.length > 0 && (
         <section className="mt-8">
           <SectionTitle>{t('whatIf', lang)}</SectionTitle>
           <div className="mt-3 space-y-3">
-            {rebuttal.branches.map((b, i) => (
+            {branches.map((b, i) => (
               <div
                 key={i}
                 className="card rounded-xl border border-slate-200 bg-white p-4 sm:p-5"

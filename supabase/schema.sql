@@ -154,6 +154,32 @@ revoke execute on function public.is_agent_allowed(text) from public;
 grant execute on function public.is_agent_allowed(text) to anon, authenticated;
 
 -- ============================================================
+-- 6c. РАЗДЕЛЫ АГЕНТА: Презентации / Сервисы / Рынок (entries)
+-- Одноступенчатые списки: элемент = заголовок + контент (локализованные).
+-- ============================================================
+create table if not exists public.entries (
+  id          uuid primary key default gen_random_uuid(),
+  section     text not null check (section in ('presentation','service','market')),
+  title       jsonb not null default '{}'::jsonb,
+  body        jsonb not null default '{}'::jsonb,
+  is_enabled  boolean not null default true,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+drop trigger if exists trg_entries_touch on public.entries;
+create trigger trg_entries_touch before update on public.entries
+  for each row execute function public.touch_updated_at();
+create index if not exists idx_entries_section on public.entries(section, sort_order);
+
+alter table public.entries enable row level security;
+drop policy if exists "public read entries" on public.entries;
+create policy "public read entries" on public.entries for select using (true);
+drop policy if exists "admin write entries" on public.entries;
+create policy "admin write entries" on public.entries
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- ============================================================
 -- 7. RLS
 -- ============================================================
 alter table public.languages  enable row level security;

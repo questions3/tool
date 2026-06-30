@@ -1,9 +1,11 @@
 import type {
   Branch,
+  Entry,
   Language,
   Localized,
   Objection,
   Rebuttal,
+  SectionId,
   Stage,
 } from '../types'
 
@@ -93,6 +95,26 @@ export function toBranch(r: BranchRow): Branch {
     label: r.label ?? {},
     condition: r.condition ?? {},
     response: r.response ?? {},
+  }
+}
+
+export interface EntryRow {
+  id: string
+  section: SectionId
+  title: Localized
+  body: Localized
+  is_enabled: boolean
+  sort_order: number
+}
+
+export function toEntry(r: EntryRow): Entry {
+  return {
+    id: r.id,
+    section: r.section,
+    title: r.title ?? {},
+    body: r.body ?? {},
+    isEnabled: r.is_enabled,
+    sortOrder: r.sort_order,
   }
 }
 

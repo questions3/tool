@@ -1,16 +1,28 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Lang, Rebuttal } from './types'
+import type { Lang, Rebuttal, SectionId } from './types'
 import { useAuth } from './hooks/useAuth'
 import { useContent } from './hooks/useContent'
-import { pick, t } from './i18n/ui'
+import { hasLang, pick, t, type UiKey } from './i18n/ui'
 import { fallbackLanguages } from './data/content'
 import { Login } from './components/Login'
 import { Header } from './components/Header'
 import { Stepper } from './components/Stepper'
 import { SelectScreen } from './components/SelectScreen'
 import { AnswerScreen } from './components/AnswerScreen'
+import { HomeScreen } from './components/HomeScreen'
+import { SectionScreen } from './components/SectionScreen'
 
 const LANG_KEY = 'convvy.lang'
+
+/** Текущий экран агента: главная, поток возражений или один из разделов. */
+type View = 'home' | 'objections' | SectionId
+
+/** Заголовок раздела для крошек/шапки. */
+const SECTION_TITLE: Record<SectionId, UiKey> = {
+  presentation: 'navPresentations',
+  service: 'navServices',
+  market: 'navMarket',
+}
 
 function loadLang(): Lang {
   return localStorage.getItem(LANG_KEY) ?? 'ru'
@@ -20,9 +32,10 @@ export default function App() {
   const { session, loading: authLoading, configured, requestCode, verifyCode, signOut } =
     useAuth()
   const content = useContent()
-  const { languages, objections, stages, loadRebuttal } = content
+  const { languages, loadRebuttal } = content
 
   const [lang, setLang] = useState<Lang>(() => loadLang())
+  const [view, setView] = useState<View>('home')
   const [objectionId, setObjectionId] = useState<string | null>(null)
   const [stageId, setStageId] = useState<string | null>(null)
 
@@ -38,6 +51,13 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(LANG_KEY, lang)
+  }, [lang])
+
+  // Смена языка = смена фильтра: сбрасываем выбор в потоке возражений,
+  // чтобы не остаться на возражении, которого нет в новом языке.
+  useEffect(() => {
+    setObjectionId(null)
+    setStageId(null)
   }, [lang])
 
   // Восстанавливаем сессию из хранилища — не мигаем экраном входа.
@@ -63,19 +83,16 @@ export default function App() {
     )
   }
 
-  function reset() {
+  function goHome() {
     setObjectionId(null)
     setStageId(null)
+    setView('home')
   }
 
   function handleLogout() {
-    reset()
+    goHome()
     void signOut()
   }
-
-  const step: 1 | 2 | 3 = !objectionId ? 1 : !stageId ? 2 : 3
-  const objection = objections.find((o) => o.id === objectionId)
-  const stage = stages.find((s) => s.id === stageId)
 
   return (
     <div className="min-h-dvh">
@@ -84,85 +101,140 @@ export default function App() {
         languages={langOptions}
         onLangChange={setLang}
         onLogout={handleLogout}
-        onHome={reset}
+        onHome={goHome}
       />
 
       <main className="mx-auto max-w-3xl px-4 py-7 sm:px-6 sm:py-10">
-        <Stepper
-          lang={lang}
-          active={step}
-          crumbs={[
-            {
-              key: 'stepperObjection',
-              value: objection ? pick(objection.label, lang) : undefined,
-              onClick: () => {
-                setObjectionId(null)
-                setStageId(null)
-              },
-            },
-            {
-              key: 'stepperStage',
-              value: stage ? pick(stage.label, lang) : undefined,
-              onClick: () => setStageId(null),
-            },
-            { key: 'stepperAnswer' },
-          ]}
-        />
-
-        {content.loading && <Notice>{t('loading', lang)}</Notice>}
-        {content.error && (
-          <Notice tone="error">{t('loadError', lang)}</Notice>
+        {view === 'home' && (
+          <HomeScreen lang={lang} onSelect={(choice) => setView(choice)} />
         )}
-        {!content.loading &&
-          !content.error &&
-          objections.length === 0 && <Notice>{t('emptyContent', lang)}</Notice>}
 
-        {!content.loading && !content.error && objections.length > 0 && (
-          <>
-            {step === 1 && (
-              <SelectScreen
-                lang={lang}
-                stepLabel={`${t('step', lang)} 1`}
-                title={t('step1Title', lang)}
-                columns={2}
-                items={objections.map((o) => ({
-                  id: o.id,
-                  label: pick(o.label, lang),
-                  hint: pick(o.hint, lang),
-                }))}
-                onSelect={(id) => setObjectionId(id)}
-              />
-            )}
+        {view === 'objections' && (
+          <ObjectionsFlow
+            lang={lang}
+            content={content}
+            objectionId={objectionId}
+            stageId={stageId}
+            setObjectionId={setObjectionId}
+            setStageId={setStageId}
+            loadRebuttal={loadRebuttal}
+          />
+        )}
 
-            {step === 2 && (
-              <SelectScreen
-                lang={lang}
-                stepLabel={`${t('step', lang)} 2`}
-                title={t('step2Title', lang)}
-                columns={3}
-                items={stages.map((s) => ({
-                  id: s.id,
-                  label: pick(s.label, lang),
-                  hint: pick(s.hint, lang),
-                }))}
-                onSelect={(id) => setStageId(id)}
-              />
-            )}
-
-            {step === 3 && objection && stage && (
-              <AnswerWrap
-                lang={lang}
-                objectionId={objection.id}
-                stageId={stage.id}
-                objectionLabel={pick(objection.label, lang)}
-                stageLabel={pick(stage.label, lang)}
-                loadRebuttal={loadRebuttal}
-              />
-            )}
-          </>
+        {view !== 'home' && view !== 'objections' && (
+          <SectionScreen
+            lang={lang}
+            section={view}
+            titleKey={SECTION_TITLE[view]}
+            onHome={goHome}
+          />
         )}
       </main>
     </div>
+  )
+}
+
+function ObjectionsFlow({
+  lang,
+  content,
+  objectionId,
+  stageId,
+  setObjectionId,
+  setStageId,
+  loadRebuttal,
+}: {
+  lang: Lang
+  content: ReturnType<typeof useContent>
+  objectionId: string | null
+  stageId: string | null
+  setObjectionId: (id: string | null) => void
+  setStageId: (id: string | null) => void
+  loadRebuttal: (o: string, s: string) => Promise<Rebuttal | null>
+}) {
+  const { objections, stages } = content
+
+  // Языковой фильтр: только переведённые на выбранный язык.
+  const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
+  const visibleStages = stages.filter((s) => hasLang(s.label, lang))
+
+  const step: 1 | 2 | 3 = !objectionId ? 1 : !stageId ? 2 : 3
+  const objection = objections.find((o) => o.id === objectionId)
+  const stage = stages.find((s) => s.id === stageId)
+
+  return (
+    <>
+      <Stepper
+        lang={lang}
+        active={step}
+        crumbs={[
+          {
+            key: 'stepperObjection',
+            value: objection ? pick(objection.label, lang) : undefined,
+            onClick: () => {
+              setObjectionId(null)
+              setStageId(null)
+            },
+          },
+          {
+            key: 'stepperStage',
+            value: stage ? pick(stage.label, lang) : undefined,
+            onClick: () => setStageId(null),
+          },
+          { key: 'stepperAnswer' },
+        ]}
+      />
+
+      {content.loading && <Notice>{t('loading', lang)}</Notice>}
+      {content.error && <Notice tone="error">{t('loadError', lang)}</Notice>}
+      {!content.loading && !content.error && visibleObjections.length === 0 && (
+        <Notice>{t('noEntries', lang)}</Notice>
+      )}
+
+      {!content.loading && !content.error && visibleObjections.length > 0 && (
+        <>
+          {step === 1 && (
+            <SelectScreen
+              lang={lang}
+              stepLabel={`${t('step', lang)} 1`}
+              title={t('step1Title', lang)}
+              columns={2}
+              items={visibleObjections.map((o) => ({
+                id: o.id,
+                label: pick(o.label, lang),
+                hint: pick(o.hint, lang),
+              }))}
+              onSelect={(id) => setObjectionId(id)}
+            />
+          )}
+
+          {step === 2 && (
+            <SelectScreen
+              lang={lang}
+              stepLabel={`${t('step', lang)} 2`}
+              title={t('step2Title', lang)}
+              columns={3}
+              items={visibleStages.map((s) => ({
+                id: s.id,
+                label: pick(s.label, lang),
+                hint: pick(s.hint, lang),
+              }))}
+              onSelect={(id) => setStageId(id)}
+            />
+          )}
+
+          {step === 3 && objection && stage && (
+            <AnswerWrap
+              lang={lang}
+              objectionId={objection.id}
+              stageId={stage.id}
+              objectionLabel={pick(objection.label, lang)}
+              stageLabel={pick(stage.label, lang)}
+              loadRebuttal={loadRebuttal}
+            />
+          )}
+        </>
+      )}
+    </>
   )
 }
 
@@ -224,7 +296,9 @@ function AnswerWrap({
 
   if (loading) return <Notice>{t('loading', lang)}</Notice>
   if (error) return <Notice tone="error">{t('loadError', lang)}</Notice>
-  if (!rebuttal) return <Notice>{t('noScript', lang)}</Notice>
+  // Языковой фильтр: ответ показываем только если он есть на выбранном языке.
+  if (!rebuttal || !hasLang(rebuttal.answer, lang))
+    return <Notice>{t('noScript', lang)}</Notice>
 
   return (
     <AnswerScreen
