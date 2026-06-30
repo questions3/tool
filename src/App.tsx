@@ -224,7 +224,7 @@ function AnswerWrap({
 
   if (loading) return <Notice>{t('loading', lang)}</Notice>
   if (error) return <Notice tone="error">{t('loadError', lang)}</Notice>
-  if (!rebuttal) return <Notice>{t('emptyContent', lang)}</Notice>
+  if (!rebuttal) return <Notice>{t('noScript', lang)}</Notice>
 
   return (
     <AnswerScreen
