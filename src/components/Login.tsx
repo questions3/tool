@@ -14,6 +14,14 @@ interface Props {
   verifyCode: (email: string, token: string) => Promise<AuthResult>
 }
 
+/**
+ * Длина OTP-кода настраивается в Supabase (Authentication → Email →
+ * Email OTP Length, 6–10 цифр). Не фиксируем 6 жёстко, чтобы UI принимал
+ * код любой допустимой длины.
+ */
+const OTP_MIN_LENGTH = 6
+const OTP_MAX_LENGTH = 10
+
 /** Причина отказа → ключ локализованного сообщения. */
 const FAILURE_MESSAGE: Record<AuthFailure, UiKey> = {
   not_configured: 'errNotConfigured',
@@ -140,11 +148,13 @@ export function Login({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={OTP_MAX_LENGTH}
                 value={code}
                 disabled={busy}
                 onChange={(e) => {
-                  setCode(e.target.value.replace(/\D/g, ''))
+                  setCode(
+                    e.target.value.replace(/\D/g, '').slice(0, OTP_MAX_LENGTH),
+                  )
                   if (error) setError(null)
                 }}
                 placeholder={t('codePlaceholder', lang)}
@@ -155,7 +165,7 @@ export function Login({
 
               <button
                 type="submit"
-                disabled={busy || code.length < 6}
+                disabled={busy || code.length < OTP_MIN_LENGTH}
                 className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? t('verifying', lang) : t('enter', lang)}
