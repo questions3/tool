@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Entry, Language, Localized, SectionId } from '../../types'
-import { deleteEntry, fetchEntriesAll, saveEntry } from '../../data/repository'
+import {
+  deleteEntry,
+  fetchEntriesAll,
+  reorderSwap,
+  saveEntry,
+} from '../../data/repository'
 import { useConfirm } from '../components/Confirm'
 
 interface Props {
@@ -62,7 +67,9 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
 
   function startCreate() {
     setFormError(null)
-    setDraft({ title: {}, body: {}, isEnabled: true, sortOrder: entries.length })
+    const sortOrder =
+      entries.reduce((m, e) => Math.max(m, e.sortOrder ?? 0), -1) + 1
+    setDraft({ title: {}, body: {}, isEnabled: true, sortOrder })
   }
 
   function startEdit(e: Entry) {
@@ -136,27 +143,12 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
   async function move(index: number, dir: -1 | 1) {
     const target = index + dir
     if (busy || target < 0 || target >= entries.length) return
-    const a = entries[index]
-    const b = entries[target]
     setBusy(true)
     setError(null)
     try {
-      await saveEntry({
-        id: a.id,
-        section,
-        title: a.title,
-        body: a.body,
-        isEnabled: a.isEnabled ?? true,
-        sortOrder: target,
-      })
-      await saveEntry({
-        id: b.id,
-        section,
-        title: b.title,
-        body: b.body,
-        isEnabled: b.isEnabled ?? true,
-        sortOrder: index,
-      })
+      // Атомарный swap в одной транзакции — частичный сбой не оставит
+      // два одинаковых sort_order и не перепутает порядок.
+      await reorderSwap('entries', entries[index].id, entries[target].id)
       await reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
