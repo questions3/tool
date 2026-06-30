@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Entry, Language, Localized, SectionId } from '../../types'
 import { deleteEntry, fetchEntriesAll, saveEntry } from '../../data/repository'
+import { useConfirm } from '../components/Confirm'
 
 interface Props {
   section: SectionId
@@ -38,6 +39,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -114,8 +116,10 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
 
   async function remove(e: Entry) {
     const name = e.title[lang] || Object.values(e.title)[0] || '—'
-    if (!confirm(`Удалить «${name}»? Будут удалены все языки этого элемента.`))
-      return
+    const ok = await confirm({
+      message: `Удалить «${name}»? Будут удалены все языки этого элемента.`,
+    })
+    if (!ok) return
     setBusy(true)
     setError(null)
     try {

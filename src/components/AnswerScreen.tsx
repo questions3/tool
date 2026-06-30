@@ -119,21 +119,24 @@ function ScriptCard({
     )
   }
 
-  // Ответ ветки: компактная карточка с кнопкой в углу.
+  // Ответ ветки: текст, кнопка под ним (без наложения на узких экранах).
   return (
-    <div className="relative whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-4 pr-24 text-sm leading-relaxed text-slate-700">
-      {text}
-      <button
-        onClick={copy}
-        aria-label={t('copy', lang)}
-        className={`absolute right-2.5 top-2.5 rounded-md border px-2.5 py-1 text-xs font-medium transition ${
-          copied
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-            : 'border-slate-200 bg-white text-slate-500 hover:border-accent hover:text-accent'
-        }`}
-      >
-        {copied ? `✓ ${t('copied', lang)}` : t('copy', lang)}
-      </button>
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
+        {text}
+      </div>
+      <div className="mt-2 flex justify-end">
+        <button
+          onClick={copy}
+          className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+            copied
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-white text-slate-500 hover:border-accent hover:text-accent'
+          }`}
+        >
+          {copied ? `✓ ${t('copied', lang)}` : t('copy', lang)}
+        </button>
+      </div>
     </div>
   )
 }
