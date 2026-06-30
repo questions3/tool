@@ -89,16 +89,10 @@ export default function AdminApp() {
     )
   }
 
-  return <Dashboard email={auth.session.user.email ?? ''} onSignOut={auth.signOut} />
+  return <Dashboard onSignOut={auth.signOut} />
 }
 
-function Dashboard({
-  email,
-  onSignOut,
-}: {
-  email: string
-  onSignOut: () => void
-}) {
+function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   const [tab, setTab] = useState<Tab>('languages')
   const [activeLang, setActiveLang] = useState<string>(
     () => localStorage.getItem(LANG_KEY) ?? 'ru',
@@ -133,7 +127,6 @@ function Dashboard({
             <a href="/" className="text-sm text-slate-500 hover:text-slate-900">
               ↗ Приложение
             </a>
-            <span className="hidden text-sm text-slate-400 sm:inline">{email}</span>
             <button
               onClick={onSignOut}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
