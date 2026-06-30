@@ -1,62 +1,120 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 /**
- * Авторизация по единому паролю для всех агентов.
+ * Авторизация агента по одноразовому коду (OTP) на email.
  *
- * Актуальный пароль задаётся переменной окружения `VITE_APP_PASSWORD`
- * (в Netlify → Site configuration → Environment variables). Если она не
- * задана — используется пароль по умолчанию `DEFAULT_PASSWORD`.
+ * Поток входа в два шага:
+ *   1. `requestCode(email)` — проверяем, что email есть в белом списке
+ *      (`public.is_agent_allowed` — доступна анонимам и возвращает только
+ *      boolean, не раскрывая сам список), и просим Supabase прислать код
+ *      на почту (`auth.signInWithOtp`).
+ *   2. `verifyCode(email, token)` — сверяем введённый 6-значный код
+ *      (`auth.verifyOtp`). При успехе Supabase открывает сессию, которую
+ *      мы слушаем через `onAuthStateChange`.
  *
- * ВНИМАНИЕ: это статический SPA, поэтому пароль попадает в собранный
- * бандл и виден тому, кто откроет исходники страницы. Этого достаточно
- * как «калитка» для внутреннего инструмента, но это не защита секретов.
- * Для серверной проверки пароль нужно выносить в Netlify Function.
+ * Сессия (JWT) хранится самим supabase-js в localStorage и
+ * автоматически обновляется.
+ *
+ * ВНИМАНИЕ: реальная доставка письма с кодом требует настроенного
+ * SMTP в Supabase → Authentication → Emails. Встроенный почтовик
+ * Supabase шлёт только на адреса команды проекта и жёстко лимитирован.
  */
 
-const SESSION_KEY = 'convvy.session'
+/** Причина отказа на шаге запроса/проверки кода. */
+export type AuthFailure =
+  | 'not_configured'
+  | 'not_allowed'
+  | 'send_failed'
+  | 'invalid_code'
 
-/** Пароль по умолчанию — действует, пока в окружении не задан свой. */
-export const DEFAULT_PASSWORD = '000000'
+/** Результат шага запроса/проверки кода. */
+export type AuthResult = { ok: true } | { ok: false; reason: AuthFailure }
 
-/** Пароль из окружения (если задан и непустой) или дефолтный. */
-const ENV_PASSWORD = (import.meta.env.VITE_APP_PASSWORD ?? '').trim()
-const APP_PASSWORD = ENV_PASSWORD || DEFAULT_PASSWORD
-
-/** true — если используется пароль по умолчанию (env-переменная не задана). */
-export const usingDefaultPassword = ENV_PASSWORD.length === 0
-
-export interface Session {
-  loggedInAt: number
+export interface AuthState {
+  /** true — обе env-переменные Supabase заданы (OTP-вход доступен). */
+  configured: boolean
+  /** true — пока восстанавливаем существующую сессию из хранилища. */
+  loading: boolean
+  /** Текущая сессия Supabase Auth или null. */
+  session: Session | null
+  /** Шаг 1: запросить код на email из белого списка. */
+  requestCode: (email: string) => Promise<AuthResult>
+  /** Шаг 2: проверить введённый код и открыть сессию. */
+  verifyCode: (email: string, token: string) => Promise<AuthResult>
+  /** Завершить сессию. */
+  signOut: () => Promise<void>
 }
 
-function loadSession(): Session | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    return raw ? (JSON.parse(raw) as Session) : null
-  } catch {
-    return null
-  }
-}
-
-export function useAuth() {
-  const [session, setSession] = useState<Session | null>(() => loadSession())
+export function useAuth(): AuthState {
+  const configured = isSupabaseConfigured
+  const [loading, setLoading] = useState(configured)
+  const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
-    if (session) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-    } else {
-      localStorage.removeItem(SESSION_KEY)
+    if (!supabase) {
+      setLoading(false)
+      return
     }
-  }, [session])
+    let cancelled = false
 
-  /** Проверить пароль и открыть сессию. Возвращает true при успехе. */
-  const login = useCallback((password: string): boolean => {
-    if (password.trim() !== APP_PASSWORD) return false
-    setSession({ loggedInAt: Date.now() })
-    return true
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return
+      setSession(data.session)
+      setLoading(false)
+    })
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (!cancelled) setSession(next)
+    })
+
+    return () => {
+      cancelled = true
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
-  const logout = useCallback(() => setSession(null), [])
+  const requestCode = useCallback(async (email: string): Promise<AuthResult> => {
+    if (!supabase) return { ok: false, reason: 'not_configured' }
+    const clean = email.trim()
 
-  return { session, login, logout, usingDefaultPassword }
+    // 1. Email должен быть в белом списке агентов.
+    const { data: allowed, error: rpcError } = await supabase.rpc(
+      'is_agent_allowed',
+      { p_email: clean },
+    )
+    if (rpcError) return { ok: false, reason: 'send_failed' }
+    if (!allowed) return { ok: false, reason: 'not_allowed' }
+
+    // 2. Просим Supabase отправить одноразовый код на почту.
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: clean,
+      options: { shouldCreateUser: true },
+    })
+    if (otpError) return { ok: false, reason: 'send_failed' }
+
+    return { ok: true }
+  }, [])
+
+  const verifyCode = useCallback(
+    async (email: string, token: string): Promise<AuthResult> => {
+      if (!supabase) return { ok: false, reason: 'not_configured' }
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: token.trim(),
+        type: 'email',
+      })
+      if (error) return { ok: false, reason: 'invalid_code' }
+      return { ok: true }
+    },
+    [],
+  )
+
+  const signOut = useCallback(async () => {
+    if (!supabase) return
+    await supabase.auth.signOut()
+  }, [])
+
+  return { configured, loading, session, requestCode, verifyCode, signOut }
 }

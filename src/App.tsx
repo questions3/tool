@@ -17,7 +17,8 @@ function loadLang(): Lang {
 }
 
 export default function App() {
-  const { session, login, logout, usingDefaultPassword } = useAuth()
+  const { session, loading: authLoading, configured, requestCode, verifyCode, signOut } =
+    useAuth()
   const content = useContent()
   const { languages, objections, stages, loadRebuttal } = content
 
@@ -39,15 +40,25 @@ export default function App() {
     localStorage.setItem(LANG_KEY, lang)
   }, [lang])
 
-  // Не авторизован — экран входа
+  // Восстанавливаем сессию из хранилища — не мигаем экраном входа.
+  if (authLoading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">
+        {t('loading', lang)}
+      </div>
+    )
+  }
+
+  // Не авторизован — экран входа по коду на email (OTP).
   if (!session) {
     return (
       <Login
         lang={lang}
         languages={langOptions}
+        configured={configured}
         onLangChange={setLang}
-        login={login}
-        usingDefaultPassword={usingDefaultPassword}
+        requestCode={requestCode}
+        verifyCode={verifyCode}
       />
     )
   }
@@ -59,7 +70,7 @@ export default function App() {
 
   function handleLogout() {
     reset()
-    logout()
+    void signOut()
   }
 
   const step: 1 | 2 | 3 = !objectionId ? 1 : !stageId ? 2 : 3
