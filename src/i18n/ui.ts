@@ -26,7 +26,7 @@ export const ui = {
   sendCode: { ru: 'Получить код', pl: 'Wyślij kod' },
   sending: { ru: 'Отправляем…', pl: 'Wysyłanie…' },
   codeLabel: { ru: 'Код из письма', pl: 'Kod z e-maila' },
-  codePlaceholder: { ru: '6-значный код', pl: '6-cyfrowy kod' },
+  codePlaceholder: { ru: 'Код из письма', pl: 'Kod z e-maila' },
   verifying: { ru: 'Проверяем…', pl: 'Sprawdzanie…' },
   codeSentTo: {
     ru: 'Мы отправили код на',
