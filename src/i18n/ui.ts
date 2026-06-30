@@ -276,6 +276,13 @@ export const ui = {
   },
   condition: { ru: 'Если', pl: 'Jeśli', en: 'If', de: 'Wenn', es: 'Si' },
   copy: { ru: 'Копировать', pl: 'Kopiuj', en: 'Copy', de: 'Kopieren', es: 'Copiar' },
+  copyAnswer: {
+    ru: 'Копировать ответ',
+    pl: 'Kopiuj odpowiedź',
+    en: 'Copy answer',
+    de: 'Antwort kopieren',
+    es: 'Copiar respuesta',
+  },
   copied: {
     ru: 'Скопировано',
     pl: 'Skopiowano',

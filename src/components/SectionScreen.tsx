@@ -28,36 +28,29 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
     <div className="fade-in">
       <Stepper
         active={open ? 2 : 1}
-        crumbs={[
-          {
-            label: sectionTitle,
-            onClick: open ? () => setOpenId(null) : undefined,
-          },
-          { label: open ? pick(open.title, lang) : t('stepperEntry', lang) },
-        ]}
+        crumbs={
+          open
+            ? [
+                { label: sectionTitle, onClick: () => setOpenId(null) },
+                { label: pick(open.title, lang) },
+              ]
+            : [{ label: sectionTitle }]
+        }
       />
 
       {loading && <Notice>{t('loading', lang)}</Notice>}
       {error && <Notice tone="error">{t('loadError', lang)}</Notice>}
 
       {!loading && !error && open && (
-        <article>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {pick(open.title, lang)}
-          </h1>
-          <CopyCard lang={lang} text={pick(open.body, lang)} />
-        </article>
+        <CopyCard lang={lang} text={pick(open.body, lang)} />
       )}
 
       {!loading && !error && !open && (
         <>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {sectionTitle}
-          </h1>
           {visible.length === 0 ? (
             <Notice>{t('noEntries', lang)}</Notice>
           ) : (
-            <ul className="mt-6 space-y-3">
+            <ul className="space-y-3">
               {visible.map((e) => (
                 <li key={e.id}>
                   <button
@@ -103,18 +96,15 @@ function CopyCard({ lang, text }: { lang: Lang; text: string }) {
   }
 
   return (
-    <div className="relative mt-5 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 pr-24 text-[15px] leading-relaxed text-slate-900">
-      {text}
+    <div className="mt-5">
+      <div className="whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+        {text}
+      </div>
       <button
         onClick={copy}
-        aria-label={t('copy', lang)}
-        className={`absolute right-2.5 top-2.5 rounded-md border px-2.5 py-1 text-xs font-medium transition ${
-          copied
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-            : 'border-slate-200 bg-white text-slate-500 hover:border-accent hover:text-accent'
-        }`}
+        className="mt-3 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover"
       >
-        {copied ? `✓ ${t('copied', lang)}` : t('copy', lang)}
+        {copied ? `✓ ${t('copied', lang)}` : t('copyAnswer', lang)}
       </button>
     </div>
   )
