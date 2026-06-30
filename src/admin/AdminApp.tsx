@@ -8,14 +8,26 @@ import { ObjectionsSection } from './sections/ObjectionsSection'
 import { StagesSection } from './sections/StagesSection'
 import { RebuttalsSection } from './sections/RebuttalsSection'
 import { AgentsSection } from './sections/AgentsSection'
+import { EntriesSection } from './sections/EntriesSection'
 
-type Tab = 'languages' | 'objections' | 'stages' | 'rebuttals' | 'agents'
+type Tab =
+  | 'languages'
+  | 'objections'
+  | 'stages'
+  | 'rebuttals'
+  | 'presentation'
+  | 'service'
+  | 'market'
+  | 'agents'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'languages', label: 'Языки' },
   { id: 'objections', label: 'Возражения' },
   { id: 'stages', label: 'Этапы' },
   { id: 'rebuttals', label: 'Скрипты' },
+  { id: 'presentation', label: 'Презентации' },
+  { id: 'service', label: 'Сервисы' },
+  { id: 'market', label: 'Рынок' },
   { id: 'agents', label: 'Агенты' },
 ]
 
@@ -152,6 +164,27 @@ function Dashboard({
                 stages={data.stages}
                 rebuttals={data.rebuttals}
                 onChanged={data.reload}
+              />
+            )}
+            {tab === 'presentation' && (
+              <EntriesSection
+                section="presentation"
+                title="Презентации"
+                languages={data.languages}
+              />
+            )}
+            {tab === 'service' && (
+              <EntriesSection
+                section="service"
+                title="Сервисы"
+                languages={data.languages}
+              />
+            )}
+            {tab === 'market' && (
+              <EntriesSection
+                section="market"
+                title="Рынок"
+                languages={data.languages}
               />
             )}
             {tab === 'agents' && (

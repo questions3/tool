@@ -83,6 +83,46 @@ export async function fetchEntries(section: SectionId): Promise<Entry[]> {
   return (data as EntryRow[]).map(toEntry)
 }
 
+/** Все элементы раздела (включая выключенные) — для админки. */
+export async function fetchEntriesAll(section: SectionId): Promise<Entry[]> {
+  const { data, error } = await db()
+    .from('entries')
+    .select('*')
+    .eq('section', section)
+    .order('sort_order')
+  if (error) throw error
+  return (data as EntryRow[]).map(toEntry)
+}
+
+export interface EntryInput {
+  id?: string
+  section: SectionId
+  title: Localized
+  body: Localized
+  isEnabled: boolean
+  sortOrder: number
+}
+
+export async function saveEntry(input: EntryInput): Promise<void> {
+  const row = {
+    section: input.section,
+    title: input.title,
+    body: input.body,
+    is_enabled: input.isEnabled,
+    sort_order: input.sortOrder,
+  }
+  const table = db().from('entries')
+  const { error } = input.id
+    ? await table.update(row).eq('id', input.id)
+    : await table.insert(row)
+  if (error) throw error
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  const { error } = await db().from('entries').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function fetchRebuttal(
   objectionId: string,
   stageId: string,
