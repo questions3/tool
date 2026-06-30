@@ -154,6 +154,45 @@ revoke execute on function public.is_agent_allowed(text) from public;
 grant execute on function public.is_agent_allowed(text) to anon, authenticated;
 
 -- ============================================================
+-- 6c. АТОМАРНЫЙ РЕОРДЕР (стрелки ▲/▼ в админке)
+-- Меняет местами sort_order двух строк в одной транзакции, чтобы
+-- частичный сбой не оставил порядок в неконсистентном состоянии.
+-- SECURITY INVOKER → апдейты под сессией админа, RLS is_admin() enforced.
+-- ============================================================
+create or replace function public.reorder_swap(p_table text, p_id1 uuid, p_id2 uuid)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  s1 integer;
+  s2 integer;
+begin
+  if p_table not in ('objections','stages','entries') then
+    raise exception 'reorder_swap: table % not allowed', p_table;
+  end if;
+  execute format('select sort_order from public.%I where id = $1', p_table)
+    into s1 using p_id1;
+  execute format('select sort_order from public.%I where id = $1', p_table)
+    into s2 using p_id2;
+  if s1 is null or s2 is null then
+    raise exception 'reorder_swap: row not found';
+  end if;
+  if s1 = s2 then
+    s2 := s1 + 1;
+  end if;
+  execute format('update public.%I set sort_order = $1 where id = $2', p_table)
+    using s2, p_id1;
+  execute format('update public.%I set sort_order = $1 where id = $2', p_table)
+    using s1, p_id2;
+end;
+$$;
+
+revoke execute on function public.reorder_swap(text, uuid, uuid) from public, anon;
+grant execute on function public.reorder_swap(text, uuid, uuid) to authenticated;
+
+-- ============================================================
 -- 6c. РАЗДЕЛЫ АГЕНТА: Презентации / Сервисы / Рынок (entries)
 -- Одноступенчатые списки: элемент = заголовок + контент (локализованные).
 -- ============================================================

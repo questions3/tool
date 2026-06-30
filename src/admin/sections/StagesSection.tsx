@@ -14,6 +14,7 @@ export function StagesSection({ lang, languages, stages, onChanged }: Props) {
     <TermSection
       title="Этапы разговора"
       singular="этап"
+      table="stages"
       lang={lang}
       languages={languages}
       items={stages}

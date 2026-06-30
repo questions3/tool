@@ -19,6 +19,7 @@ export function ObjectionsSection({
     <TermSection
       title="Возражения"
       singular="возражение"
+      table="objections"
       lang={lang}
       languages={languages}
       items={objections}

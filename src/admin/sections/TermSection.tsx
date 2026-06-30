@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Language, Localized, Objection, Stage } from '../../types'
-import type { TermInput } from '../../data/repository'
+import { reorderSwap, type TermInput } from '../../data/repository'
 import { hasLang } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
 import { useConfirm } from '../components/Confirm'
@@ -51,6 +51,8 @@ interface Props {
   title: string
   /** Слово в единственном числе для кнопки «Добавить …». */
   singular: string
+  /** Таблица в БД — для атомарного реордера (стрелки ▲/▼). */
+  table: 'objections' | 'stages'
   /** Активный язык заполнения (общий переключатель в шапке). */
   lang: string
   languages: Language[]
@@ -60,6 +62,16 @@ interface Props {
   onChanged: () => Promise<void>
 }
 
+/** Следующий sort_order = максимум среди существующих + 1 (в конец списка). */
+function nextSortOrder(items: Term[]): number {
+  return items.reduce((m, i) => Math.max(m, i.sortOrder ?? 0), -1) + 1
+}
+
+/** Postgres unique_violation (дубликат slug). */
+function isUniqueViolation(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && 'code' in e && (e as { code?: string }).code === '23505'
+}
+
 function emptyDraft(sortOrder: number): DraftTerm {
   return { slug: '', label: {}, hint: {}, isEnabled: true, sortOrder }
 }
@@ -67,6 +79,7 @@ function emptyDraft(sortOrder: number): DraftTerm {
 export function TermSection({
   title,
   singular,
+  table,
   lang,
   languages,
   items,
@@ -83,7 +96,7 @@ export function TermSection({
 
   function startCreate() {
     setError(null)
-    setDraft(emptyDraft(items.length))
+    setDraft(emptyDraft(nextSortOrder(items)))
   }
 
   function startEdit(t: Term) {
@@ -106,11 +119,19 @@ export function TermSection({
       return
     }
     // Slug сохраняется при редактировании; для новых — генерируется из заголовка.
-    const slug = draft.slug.trim() || uniqueSlug(slugify(title), items, draft.id)
+    let slug = draft.slug.trim() || uniqueSlug(slugify(title), items, draft.id)
     setBusy(true)
     setError(null)
     try {
-      await onSave({ ...draft, slug })
+      try {
+        await onSave({ ...draft, slug })
+      } catch (e) {
+        // Гонка: кто-то занял этот slug между чтением списка и записью —
+        // пробуем ещё раз с числовым суффиксом, чтобы не падать на 23505.
+        if (!isUniqueViolation(e)) throw e
+        slug = `${slug}_${Date.now().toString(36).slice(-4)}`
+        await onSave({ ...draft, slug })
+      }
       await onChanged()
       setDraft(null)
     } catch (e) {
@@ -137,17 +158,6 @@ export function TermSection({
     }
   }
 
-  function inputFrom(x: Term, sortOrder: number): TermInput {
-    return {
-      id: x.id,
-      slug: x.slug ?? '',
-      label: x.label,
-      hint: x.hint,
-      isEnabled: x.isEnabled ?? true,
-      sortOrder,
-    }
-  }
-
   /** Поменять местами с соседом (стрелки ↑/↓ в списке). */
   async function move(index: number, dir: -1 | 1) {
     const target = index + dir
@@ -155,8 +165,9 @@ export function TermSection({
     setBusy(true)
     setError(null)
     try {
-      await onSave(inputFrom(items[index], target))
-      await onSave(inputFrom(items[target], index))
+      // Атомарный swap в одной транзакции — частичный сбой не оставит
+      // два одинаковых sort_order и не перепутает порядок.
+      await reorderSwap(table, items[index].id, items[target].id)
       await onChanged()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))

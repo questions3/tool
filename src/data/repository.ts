@@ -123,6 +123,20 @@ export async function deleteEntry(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** Атомарно поменять местами порядок двух строк (стрелки ▲/▼). */
+export async function reorderSwap(
+  table: 'objections' | 'stages' | 'entries',
+  id1: string,
+  id2: string,
+): Promise<void> {
+  const { error } = await db().rpc('reorder_swap', {
+    p_table: table,
+    p_id1: id1,
+    p_id2: id2,
+  })
+  if (error) throw error
+}
+
 export async function fetchRebuttal(
   objectionId: string,
   stageId: string,
