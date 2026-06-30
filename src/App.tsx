@@ -126,7 +126,6 @@ export default function App() {
             lang={lang}
             section={view}
             titleKey={SECTION_TITLE[view]}
-            onHome={goHome}
           />
         )}
       </main>
@@ -164,23 +163,22 @@ function ObjectionsFlow({
   return (
     <>
       <Stepper
-        lang={lang}
         active={step}
         crumbs={[
           {
-            key: 'stepperObjection',
-            value: objection ? pick(objection.label, lang) : undefined,
+            label: objection
+              ? pick(objection.label, lang)
+              : t('stepperObjection', lang),
             onClick: () => {
               setObjectionId(null)
               setStageId(null)
             },
           },
           {
-            key: 'stepperStage',
-            value: stage ? pick(stage.label, lang) : undefined,
+            label: stage ? pick(stage.label, lang) : t('stepperStage', lang),
             onClick: () => setStageId(null),
           },
-          { key: 'stepperAnswer' },
+          { label: t('stepperAnswer', lang) },
         ]}
       />
 

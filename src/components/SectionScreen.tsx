@@ -2,17 +2,16 @@ import { useMemo, useState } from 'react'
 import type { Lang, SectionId } from '../types'
 import { hasLang, pick, t, type UiKey } from '../i18n/ui'
 import { useEntries } from '../hooks/useEntries'
+import { Stepper } from './Stepper'
 
 interface Props {
   lang: Lang
   section: SectionId
   /** Ключ заголовка раздела (navPresentations / navServices / navMarket). */
   titleKey: UiKey
-  /** Назад на главную (к 4 плиткам). */
-  onHome: () => void
 }
 
-export function SectionScreen({ lang, section, titleKey, onHome }: Props) {
+export function SectionScreen({ lang, section, titleKey }: Props) {
   const { loading, error, entries } = useEntries(section)
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -27,12 +26,15 @@ export function SectionScreen({ lang, section, titleKey, onHome }: Props) {
 
   return (
     <div className="fade-in">
-      <Breadcrumb
-        lang={lang}
-        sectionTitle={sectionTitle}
-        leaf={open ? pick(open.title, lang) : undefined}
-        onHome={onHome}
-        onSection={open ? () => setOpenId(null) : undefined}
+      <Stepper
+        active={open ? 2 : 1}
+        crumbs={[
+          {
+            label: sectionTitle,
+            onClick: open ? () => setOpenId(null) : undefined,
+          },
+          { label: open ? pick(open.title, lang) : t('stepperEntry', lang) },
+        ]}
       />
 
       {loading && <Notice>{t('loading', lang)}</Notice>}
@@ -84,49 +86,6 @@ export function SectionScreen({ lang, section, titleKey, onHome }: Props) {
         </>
       )}
     </div>
-  )
-}
-
-function Breadcrumb({
-  lang,
-  sectionTitle,
-  leaf,
-  onHome,
-  onSection,
-}: {
-  lang: Lang
-  sectionTitle: string
-  leaf?: string
-  onHome: () => void
-  onSection?: () => void
-}) {
-  return (
-    <nav className="mb-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-500">
-      <button onClick={onHome} className="hover:text-slate-900 hover:underline">
-        {t('home', lang)}
-      </button>
-      <span aria-hidden className="text-slate-300">
-        ›
-      </span>
-      {leaf ? (
-        <button
-          onClick={onSection}
-          className="hover:text-slate-900 hover:underline"
-        >
-          {sectionTitle}
-        </button>
-      ) : (
-        <span className="font-medium text-slate-900">{sectionTitle}</span>
-      )}
-      {leaf && (
-        <>
-          <span aria-hidden className="text-slate-300">
-            ›
-          </span>
-          <span className="font-medium text-slate-900">{leaf}</span>
-        </>
-      )}
-    </nav>
   )
 }
 

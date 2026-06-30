@@ -1,31 +1,33 @@
-import type { Lang } from '../types'
-import { t } from '../i18n/ui'
-
 interface Crumb {
-  key: 'stepperObjection' | 'stepperStage' | 'stepperAnswer'
-  value?: string
+  /** Готовая подпись шага (уже локализованная). */
+  label: string
+  /** Переход на этот шаг (доступен только для пройденных шагов). */
   onClick?: () => void
 }
 
 interface Props {
-  lang: Lang
-  active: 1 | 2 | 3
+  /** Номер активного шага (1-based). */
+  active: number
   crumbs: Crumb[]
 }
 
-export function Stepper({ lang, active, crumbs }: Props) {
+/**
+ * Универсальные «хлебные крошки»-шаги. Используются и в потоке возражений
+ * (Возражение › Этап › Ответ), и в разделах (Раздел › Элемент).
+ */
+export function Stepper({ active, crumbs }: Props) {
   return (
     <nav
       aria-label="progress"
       className="mb-7 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
     >
       {crumbs.map((c, i) => {
-        const step = (i + 1) as 1 | 2 | 3
+        const step = i + 1
         const isActive = step === active
         const done = step < active
         const clickable = done && Boolean(c.onClick)
         return (
-          <span key={c.key} className="flex items-center gap-1.5">
+          <span key={i} className="flex items-center gap-1.5">
             {i > 0 && (
               <span aria-hidden className="text-slate-300">
                 ›
@@ -54,9 +56,7 @@ export function Stepper({ lang, active, crumbs }: Props) {
               >
                 {done ? '✓' : step}
               </span>
-              <span className="whitespace-nowrap font-medium">
-                {c.value ?? t(c.key, lang)}
-              </span>
+              <span className="whitespace-nowrap font-medium">{c.label}</span>
             </button>
           </span>
         )
