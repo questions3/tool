@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Language, Objection, Rebuttal, Stage } from '../types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { withTimeout } from '../lib/withTimeout'
@@ -54,27 +54,55 @@ export function useContent(): ContentState {
   const [stages, setStages] = useState<Stage[]>(
     usingFallback ? enabled(staticStages) : [],
   )
+  // Тик ручного/фонового перезапроса (фокус вкладки). 0 — первичная загрузка.
+  const [reloadTick, setReloadTick] = useState(0)
+  const lastFetch = useRef(0)
 
   useEffect(() => {
     if (usingFallback) return
     let cancelled = false
-    setLoading(true)
-    setError(null)
+    const initial = reloadTick === 0
+    // Фоновое обновление не показывает экран загрузки и не рушит контент
+    // при ошибке — агент продолжает видеть прежние данные.
+    if (initial) {
+      setLoading(true)
+      setError(null)
+    }
+    lastFetch.current = Date.now()
     withTimeout(Promise.all([fetchLanguages(), fetchObjections(), fetchStages()]))
       .then(([langs, objs, stgs]) => {
         if (cancelled) return
         setLanguages(enabled(langs))
         setObjections(enabled(objs))
         setStages(enabled(stgs))
+        setError(null)
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e))
+        if (cancelled || !initial) return
+        setError(e instanceof Error ? e.message : String(e))
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && initial) setLoading(false)
       })
     return () => {
       cancelled = true
+    }
+  }, [usingFallback, reloadTick])
+
+  // Возврат к вкладке → подтягиваем свежий контент (админ мог его изменить).
+  // Троттлинг 20с, чтобы быстрый alt-tab не порождал шквал запросов.
+  useEffect(() => {
+    if (usingFallback) return
+    function refresh() {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - lastFetch.current < 20000) return
+      setReloadTick((n) => n + 1)
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
     }
   }, [usingFallback])
 

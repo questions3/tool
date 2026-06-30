@@ -46,14 +46,22 @@ export function useAdminAuth(): AdminAuthState {
   useEffect(() => {
     if (!supabase) return
     let cancelled = false
+    // Монотонный токен: при быстрой смене сессий (onAuthStateChange может
+    // сработать несколько раз подряд) асинхронный checkIsAdmin старого вызова
+    // мог разрешиться ПОЗЖЕ нового и записать устаревший isAdmin. Применяем
+    // результат только если это всё ещё самый свежий apply().
+    let token = 0
 
     async function apply(next: Session | null) {
       if (cancelled) return
+      const my = ++token
       try {
+        const admin = next ? await checkIsAdmin(next.user.id) : false
+        if (cancelled || my !== token) return
         setSession(next)
-        setIsAdmin(next ? await checkIsAdmin(next.user.id) : false)
+        setIsAdmin(admin)
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && my === token) setLoading(false)
       }
     }
 
