@@ -71,3 +71,18 @@ export interface Stage {
   isEnabled?: boolean
   sortOrder?: number
 }
+
+/** Разделы агента, кроме возражений (одноступенчатые списки). */
+export type SectionId = 'presentation' | 'service' | 'market'
+
+/** Элемент раздела (презентация / сервис / рынок): заголовок + контент. */
+export interface Entry {
+  id: string
+  section: SectionId
+  /** Заголовок в списке. */
+  title: Localized
+  /** Контент (спич), показывается на экране элемента. */
+  body: Localized
+  isEnabled?: boolean
+  sortOrder?: number
+}
