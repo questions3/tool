@@ -49,6 +49,10 @@ export function LanguagesSection({ languages, onChanged }: Props) {
       setError('Укажите название языка.')
       return
     }
+    if (draft.isNew && languages.some((l) => l.code === code)) {
+      setError('Язык с таким кодом уже существует.')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -68,6 +72,11 @@ export function LanguagesSection({ languages, onChanged }: Props) {
   }
 
   async function remove(l: Language) {
+    setError(null)
+    if (languages.length <= 1) {
+      setError('Нельзя удалить единственный язык.')
+      return
+    }
     const ok = await confirm({
       message: `Удалить язык «${l.name}» (${l.code})?\nТексты на этом языке в JSONB останутся, но перестанут показываться.`,
     })
@@ -179,7 +188,7 @@ export function LanguagesSection({ languages, onChanged }: Props) {
                 type="number"
                 value={draft.sortOrder}
                 onChange={(e) =>
-                  setDraft({ ...draft, sortOrder: Number(e.target.value) })
+                  setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })
                 }
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />

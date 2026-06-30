@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { useContent } from './hooks/useContent'
 import { hasLang, pick, t, type UiKey } from './i18n/ui'
 import { fallbackLanguages } from './data/content'
+import { withTimeout } from './lib/withTimeout'
 import { Login } from './components/Login'
 import { Header } from './components/Header'
 import { Stepper } from './components/Stepper'
@@ -70,7 +71,9 @@ export default function App() {
   }
 
   // Не авторизован — экран входа по коду на email (OTP).
-  if (!session) {
+  // Если Supabase не настроен, аутентифицировать нечем — показываем
+  // приложение на встроенном (фолбэк) контенте, а не запертый экран входа.
+  if (!session && configured) {
     return (
       <Login
         lang={lang}
@@ -156,9 +159,12 @@ function ObjectionsFlow({
   const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
   const visibleStages = stages.filter((s) => hasLang(s.label, lang))
 
-  const step: 1 | 2 | 3 = !objectionId ? 1 : !stageId ? 2 : 3
-  const objection = objections.find((o) => o.id === objectionId)
-  const stage = stages.find((s) => s.id === stageId)
+  // Выбор и шаг считаем по ОТФИЛЬТРОВАННЫМ спискам: если активный выбор не
+  // переведён на текущий язык, он просто «не существует» → шаг откатывается,
+  // и мы не показываем чужой fallback-текст и не зависаем на пустом шаге 3.
+  const objection = visibleObjections.find((o) => o.id === objectionId)
+  const stage = visibleStages.find((s) => s.id === stageId)
+  const step: 1 | 2 | 3 = !objection ? 1 : !stage ? 2 : 3
 
   return (
     <>
@@ -183,7 +189,7 @@ function ObjectionsFlow({
       />
 
       {content.loading && <Notice>{t('loading', lang)}</Notice>}
-      {content.error && <Notice tone="error">{t('loadError', lang)}</Notice>}
+      {content.error && <RetryNotice lang={lang} />}
       {!content.loading && !content.error && visibleObjections.length === 0 && (
         <Notice>{t('noEntries', lang)}</Notice>
       )}
@@ -205,7 +211,11 @@ function ObjectionsFlow({
             />
           )}
 
-          {step === 2 && (
+          {step === 2 && visibleStages.length === 0 && (
+            <Notice>{t('noStages', lang)}</Notice>
+          )}
+
+          {step === 2 && visibleStages.length > 0 && (
             <SelectScreen
               lang={lang}
               stepLabel={`${t('step', lang)} 2`}
@@ -256,6 +266,21 @@ function Notice({
   )
 }
 
+/** Сообщение об ошибке загрузки с кнопкой повторной попытки. */
+function RetryNotice({ lang }: { lang: Lang }) {
+  return (
+    <Notice tone="error">
+      {t('loadError', lang)}{' '}
+      <button
+        onClick={() => location.reload()}
+        className="font-semibold underline underline-offset-2 hover:text-red-700"
+      >
+        {t('refresh', lang)}
+      </button>
+    </Notice>
+  )
+}
+
 function AnswerWrap({
   lang,
   objectionId,
@@ -281,7 +306,7 @@ function AnswerWrap({
     let cancelled = false
     setLoading(true)
     setError(false)
-    loadRebuttal(objectionId, stageId)
+    withTimeout(loadRebuttal(objectionId, stageId))
       .then((r) => !cancelled && setRebuttal(r))
       .catch(() => !cancelled && setError(true))
       .finally(() => !cancelled && setLoading(false))
@@ -293,7 +318,7 @@ function AnswerWrap({
   }, [key, loadRebuttal])
 
   if (loading) return <Notice>{t('loading', lang)}</Notice>
-  if (error) return <Notice tone="error">{t('loadError', lang)}</Notice>
+  if (error) return <RetryNotice lang={lang} />
   // Языковой фильтр: ответ показываем только если он есть на выбранном языке.
   if (!rebuttal || !hasLang(rebuttal.answer, lang))
     return <Notice>{t('noScript', lang)}</Notice>

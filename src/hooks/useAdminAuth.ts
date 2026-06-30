@@ -22,12 +22,18 @@ export interface AdminAuthState {
 
 async function checkIsAdmin(userId: string): Promise<boolean> {
   if (!supabase) return false
-  const { data } = await supabase
-    .from('admins')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle()
-  return Boolean(data)
+  try {
+    const { data, error } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error) return false
+    return Boolean(data)
+  } catch {
+    // Сетевой сбой/таймаут не должен подвесить экран загрузки.
+    return false
+  }
 }
 
 export function useAdminAuth(): AdminAuthState {
@@ -43,12 +49,20 @@ export function useAdminAuth(): AdminAuthState {
 
     async function apply(next: Session | null) {
       if (cancelled) return
-      setSession(next)
-      setIsAdmin(next ? await checkIsAdmin(next.user.id) : false)
-      if (!cancelled) setLoading(false)
+      try {
+        setSession(next)
+        setIsAdmin(next ? await checkIsAdmin(next.user.id) : false)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
 
-    supabase.auth.getSession().then(({ data }) => apply(data.session))
+    supabase.auth
+      .getSession()
+      .then(({ data }) => apply(data.session))
+      .catch(() => {
+        if (!cancelled) setLoading(false)
+      })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       void apply(s)
     })

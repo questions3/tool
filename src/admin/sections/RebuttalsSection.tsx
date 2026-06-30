@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   Branch,
   Language,
@@ -9,6 +9,7 @@ import type {
 } from '../../types'
 import {
   deleteBranch,
+  fetchRebuttal,
   saveBranch,
   saveRebuttal,
 } from '../../data/repository'
@@ -48,6 +49,13 @@ function toForm(r: Rebuttal | undefined): Form {
   }
 }
 
+/** Ветка считается заполненной, если есть хоть какой-то непустой текст. */
+function branchHasContent(b: BranchDraft): boolean {
+  return [b.label, b.condition, b.response].some((loc) =>
+    Object.values(loc).some((v) => typeof v === 'string' && v.trim() !== ''),
+  )
+}
+
 export function RebuttalsSection({
   lang,
   languages,
@@ -68,14 +76,19 @@ export function RebuttalsSection({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const loadedKey = useRef<string | null>(null)
 
-  // При смене пары (возражение × этап) перезагружаем форму.
+  // Сбрасываем форму ТОЛЬКО при смене пары (возражение × этап). Рефетчи
+  // (в т.ч. после собственного сохранения) больше не затирают правки формы.
   useEffect(() => {
+    const key = `${objId}:${stageId}`
+    if (loadedKey.current === key) return
+    loadedKey.current = key
     setForm(toForm(current))
     setRemovedIds([])
     setError(null)
     setSaved(false)
-    // current стабилен для данной пары
+    // current берётся из актуального rebuttals на момент смены пары
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [objId, stageId, rebuttals])
 
@@ -113,6 +126,8 @@ export function RebuttalsSection({
       setError(`Заполните базовый ответ для языка ${lang.toUpperCase()}.`)
       return
     }
+    // Полностью пустые ветки не сохраняем.
+    const branches = form.branches.filter(branchHasContent)
     setBusy(true)
     setError(null)
     setSaved(false)
@@ -124,9 +139,13 @@ export function RebuttalsSection({
         answer: form.answer,
         isDraft: form.isDraft,
       })
+      // Фиксируем id сразу — иначе повторное сохранение сделает второй INSERT
+      // и упрётся в unique(objection_id, stage_id).
+      setForm((f) => ({ ...f, id: rebuttalId }))
       for (const id of removedIds) await deleteBranch(id)
+      setRemovedIds([]) // удаления уже применены — не повторять при ретрае
       await Promise.all(
-        form.branches.map((b, i) =>
+        branches.map((b, i) =>
           saveBranch({
             id: b.id,
             rebuttalId,
@@ -138,7 +157,10 @@ export function RebuttalsSection({
         ),
       )
       await onChanged()
-      setRemovedIds([])
+      // Перечитываем пару, чтобы получить id новых веток (иначе следующее
+      // сохранение вставит их повторно). Эффект формы не сработает — пара та же.
+      const fresh = await fetchRebuttal(objId, stageId)
+      setForm(toForm(fresh ?? undefined))
       setSaved(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
