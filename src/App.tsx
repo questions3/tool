@@ -125,7 +125,10 @@ export default function App() {
         )}
 
         {view !== 'home' && view !== 'objections' && (
+          // key={view} — чистый ремоунт при смене раздела: внутреннее
+          // состояние (открытый элемент) не «протекает» между разделами.
           <SectionScreen
+            key={view}
             lang={lang}
             section={view}
             titleKey={SECTION_TITLE[view]}
@@ -319,8 +322,9 @@ function AnswerWrap({
 
   if (loading) return <Notice>{t('loading', lang)}</Notice>
   if (error) return <RetryNotice lang={lang} />
+  // Черновики видны только в админке; агенту они «не существуют».
   // Языковой фильтр: ответ показываем только если он есть на выбранном языке.
-  if (!rebuttal || !hasLang(rebuttal.answer, lang))
+  if (!rebuttal || rebuttal.draft || !hasLang(rebuttal.answer, lang))
     return <Notice>{t('noScript', lang)}</Notice>
 
   return (
