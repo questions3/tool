@@ -89,6 +89,10 @@ export const ui = {
     ru: 'Контент ещё не добавлен. Зайдите в админ-панель.',
     pl: 'Treść nie została jeszcze dodana. Wejdź do panelu admina.',
   },
+  noScript: {
+    ru: 'Скрипт для этой пары пока готовится. Вернитесь назад и выберите другое возражение или этап.',
+    pl: 'Skrypt dla tej pary jest w przygotowaniu. Wróć i wybierz inną obiekcję lub etap.',
+  },
 } satisfies Record<string, Localized>
 
 export type UiKey = keyof typeof ui
