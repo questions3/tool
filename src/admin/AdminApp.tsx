@@ -7,14 +7,16 @@ import { LanguagesSection } from './sections/LanguagesSection'
 import { ObjectionsSection } from './sections/ObjectionsSection'
 import { StagesSection } from './sections/StagesSection'
 import { RebuttalsSection } from './sections/RebuttalsSection'
+import { AgentsSection } from './sections/AgentsSection'
 
-type Tab = 'languages' | 'objections' | 'stages' | 'rebuttals'
+type Tab = 'languages' | 'objections' | 'stages' | 'rebuttals' | 'agents'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'languages', label: 'Языки' },
   { id: 'objections', label: 'Возражения' },
   { id: 'stages', label: 'Этапы' },
   { id: 'rebuttals', label: 'Скрипты' },
+  { id: 'agents', label: 'Агенты' },
 ]
 
 export default function AdminApp() {
@@ -100,12 +102,12 @@ function Dashboard({
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-4xl gap-1 px-4 sm:px-6">
+        <nav className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-4 sm:px-6">
           {TABS.map((tb) => (
             <button
               key={tb.id}
               onClick={() => setTab(tb.id)}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition ${
+              className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${
                 tab === tb.id
                   ? 'border-accent text-accent'
                   : 'border-transparent text-slate-500 hover:text-slate-900'
@@ -149,6 +151,12 @@ function Dashboard({
                 objections={data.objections}
                 stages={data.stages}
                 rebuttals={data.rebuttals}
+                onChanged={data.reload}
+              />
+            )}
+            {tab === 'agents' && (
+              <AgentsSection
+                agentEmails={data.agentEmails}
                 onChanged={data.reload}
               />
             )}
