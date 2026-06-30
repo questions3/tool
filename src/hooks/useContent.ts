@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Language, Objection, Rebuttal, Stage } from '../types'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { withTimeout } from '../lib/withTimeout'
 import {
   fetchLanguages,
   fetchObjections,
@@ -59,7 +60,7 @@ export function useContent(): ContentState {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([fetchLanguages(), fetchObjections(), fetchStages()])
+    withTimeout(Promise.all([fetchLanguages(), fetchObjections(), fetchStages()]))
       .then(([langs, objs, stgs]) => {
         if (cancelled) return
         setLanguages(enabled(langs))

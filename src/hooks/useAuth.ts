@@ -78,35 +78,43 @@ export function useAuth(): AuthState {
   const requestCode = useCallback(async (email: string): Promise<AuthResult> => {
     if (!supabase) return { ok: false, reason: 'not_configured' }
     const clean = email.trim()
+    try {
+      // 1. Email должен быть в белом списке агентов.
+      const { data: allowed, error: rpcError } = await supabase.rpc(
+        'is_agent_allowed',
+        { p_email: clean },
+      )
+      if (rpcError) return { ok: false, reason: 'send_failed' }
+      if (!allowed) return { ok: false, reason: 'not_allowed' }
 
-    // 1. Email должен быть в белом списке агентов.
-    const { data: allowed, error: rpcError } = await supabase.rpc(
-      'is_agent_allowed',
-      { p_email: clean },
-    )
-    if (rpcError) return { ok: false, reason: 'send_failed' }
-    if (!allowed) return { ok: false, reason: 'not_allowed' }
+      // 2. Просим Supabase отправить одноразовый код на почту.
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: clean,
+        options: { shouldCreateUser: true },
+      })
+      if (otpError) return { ok: false, reason: 'send_failed' }
 
-    // 2. Просим Supabase отправить одноразовый код на почту.
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: clean,
-      options: { shouldCreateUser: true },
-    })
-    if (otpError) return { ok: false, reason: 'send_failed' }
-
-    return { ok: true }
+      return { ok: true }
+    } catch {
+      // Промис мог отклониться (сеть/ретраи) — не оставляем форму висеть.
+      return { ok: false, reason: 'send_failed' }
+    }
   }, [])
 
   const verifyCode = useCallback(
     async (email: string, token: string): Promise<AuthResult> => {
       if (!supabase) return { ok: false, reason: 'not_configured' }
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: token.trim(),
-        type: 'email',
-      })
-      if (error) return { ok: false, reason: 'invalid_code' }
-      return { ok: true }
+      try {
+        const { error } = await supabase.auth.verifyOtp({
+          email: email.trim(),
+          token: token.trim(),
+          type: 'email',
+        })
+        if (error) return { ok: false, reason: 'invalid_code' }
+        return { ok: true }
+      } catch {
+        return { ok: false, reason: 'invalid_code' }
+      }
     },
     [],
   )

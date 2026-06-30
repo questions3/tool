@@ -39,7 +39,17 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
       />
 
       {loading && <Notice>{t('loading', lang)}</Notice>}
-      {error && <Notice tone="error">{t('loadError', lang)}</Notice>}
+      {error && (
+        <Notice tone="error">
+          {t('loadError', lang)}{' '}
+          <button
+            onClick={() => location.reload()}
+            className="font-semibold underline underline-offset-2 hover:text-red-700"
+          >
+            {t('refresh', lang)}
+          </button>
+        </Notice>
+      )}
 
       {!loading && !error && open && (
         <CopyCard lang={lang} text={pick(open.body, lang)} />

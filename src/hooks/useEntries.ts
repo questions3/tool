@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Entry, SectionId } from '../types'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { withTimeout } from '../lib/withTimeout'
 import { fetchEntries } from '../data/repository'
 
 export interface EntriesState {
@@ -27,7 +28,7 @@ export function useEntries(section: SectionId): EntriesState {
     let cancelled = false
     setLoading(true)
     setError(false)
-    fetchEntries(section)
+    withTimeout(fetchEntries(section))
       .then((e) => !cancelled && setEntries(e))
       .catch(() => !cancelled && setError(true))
       .finally(() => !cancelled && setLoading(false))
