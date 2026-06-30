@@ -128,6 +128,39 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
     }
   }
 
+  /** Поменять местами с соседом (стрелки ↑/↓ в списке). */
+  async function move(index: number, dir: -1 | 1) {
+    const target = index + dir
+    if (busy || target < 0 || target >= entries.length) return
+    const a = entries[index]
+    const b = entries[target]
+    setBusy(true)
+    setError(null)
+    try {
+      await saveEntry({
+        id: a.id,
+        section,
+        title: a.title,
+        body: a.body,
+        isEnabled: a.isEnabled ?? true,
+        sortOrder: target,
+      })
+      await saveEntry({
+        id: b.id,
+        section,
+        title: b.title,
+        body: b.body,
+        isEnabled: b.isEnabled ?? true,
+        sortOrder: index,
+      })
+      await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
@@ -139,11 +172,6 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
           + Добавить
         </button>
       </div>
-      <p className="mb-4 text-sm text-slate-500">
-        Выберите язык заполнения в шапке, затем заполните поля. Переключив язык,
-        можно добавить перевод к тому же элементу.
-      </p>
-
       {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -153,7 +181,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
 
       {!loading && !error && (
         <ul className="space-y-2">
-          {entries.map((e) => (
+          {entries.map((e, idx) => (
             <li
               key={e.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
@@ -189,7 +217,25 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
                   ))}
                 </div>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => move(idx, -1)}
+                    disabled={busy || idx === 0}
+                    aria-label="Выше"
+                    className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => move(idx, 1)}
+                    disabled={busy || idx === entries.length - 1}
+                    aria-label="Ниже"
+                    className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                  >
+                    ▼
+                  </button>
+                </div>
                 <button
                   onClick={() => startEdit(e)}
                   className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
@@ -249,37 +295,18 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
             />
           </label>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Порядок (sort)
-              </span>
-              <input
-                type="number"
-                value={draft.sortOrder}
-                onChange={(e) =>
-                  setDraft((d) =>
-                    d
-                      ? { ...d, sortOrder: Number(e.target.value) || 0 }
-                      : d,
-                  )
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-            <label className="mt-6 flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={draft.isEnabled}
-                onChange={(e) =>
-                  setDraft((d) =>
-                    d ? { ...d, isEnabled: e.target.checked } : d,
-                  )
-                }
-              />
-              Включено (показывать агентам)
-            </label>
-          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={draft.isEnabled}
+              onChange={(e) =>
+                setDraft((d) =>
+                  d ? { ...d, isEnabled: e.target.checked } : d,
+                )
+              }
+            />
+            Включено (показывать агентам)
+          </label>
 
           {formError && <p className="text-sm text-red-600">{formError}</p>}
 

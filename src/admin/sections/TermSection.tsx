@@ -133,6 +133,34 @@ export function TermSection({
     }
   }
 
+  function inputFrom(x: Term, sortOrder: number): TermInput {
+    return {
+      id: x.id,
+      slug: x.slug ?? '',
+      label: x.label,
+      hint: x.hint,
+      isEnabled: x.isEnabled ?? true,
+      sortOrder,
+    }
+  }
+
+  /** Поменять местами с соседом (стрелки ↑/↓ в списке). */
+  async function move(index: number, dir: -1 | 1) {
+    const target = index + dir
+    if (busy || target < 0 || target >= items.length) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onSave(inputFrom(items[index], target))
+      await onSave(inputFrom(items[target], index))
+      await onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
@@ -146,7 +174,7 @@ export function TermSection({
       </div>
 
       <ul className="space-y-2">
-        {items.map((t) => (
+        {items.map((t, idx) => (
           <li
             key={t.id}
             className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
@@ -187,7 +215,25 @@ export function TermSection({
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-col">
+                <button
+                  onClick={() => move(idx, -1)}
+                  disabled={busy || idx === 0}
+                  aria-label="Выше"
+                  className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                >
+                  ▲
+                </button>
+                <button
+                  onClick={() => move(idx, 1)}
+                  disabled={busy || idx === items.length - 1}
+                  aria-label="Ниже"
+                  className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                >
+                  ▼
+                </button>
+              </div>
               <button
                 onClick={() => startEdit(t)}
                 className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
@@ -217,20 +263,6 @@ export function TermSection({
             {draft.id ? 'Редактирование' : `Новый: ${singular}`} ·{' '}
             <span className="text-accent">{lang.toUpperCase()}</span>
           </h3>
-
-          <label className="flex flex-col gap-1 sm:max-w-[12rem]">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Порядок (sort)
-            </span>
-            <input
-              type="number"
-              value={draft.sortOrder}
-              onChange={(e) =>
-                setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })
-              }
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-            />
-          </label>
 
           <LocalizedInput
             label="Название (label)"

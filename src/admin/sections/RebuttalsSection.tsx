@@ -149,11 +149,7 @@ export function RebuttalsSection({
 
   return (
     <section>
-      <h2 className="mb-1 text-lg font-semibold text-slate-900">Скрипты</h2>
-      <p className="mb-4 text-sm text-slate-500">
-        Выберите пару «возражение × этап» и отредактируйте базовый ответ и ветки
-        what-if.
-      </p>
+      <h2 className="mb-4 text-lg font-semibold text-slate-900">Скрипты</h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
@@ -226,7 +222,7 @@ export function RebuttalsSection({
               setForm((f) => ({ ...f, isDraft: e.target.checked }))
             }
           />
-          Черновик (показывать бейдж «ждём финальный текст»)
+          Черновик
         </label>
 
         <div>
@@ -289,16 +285,19 @@ export function RebuttalsSection({
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {saved && <p className="text-sm text-emerald-600">Сохранено ✓</p>}
-
-        <button
-          onClick={save}
-          disabled={busy}
-          className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-        >
-          {busy ? 'Сохранение…' : 'Сохранить скрипт'}
-        </button>
+        <div className="sticky bottom-0 -mx-4 mt-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+          {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+          {saved && (
+            <p className="mb-2 text-sm text-emerald-600">Сохранено ✓</p>
+          )}
+          <button
+            onClick={save}
+            disabled={busy}
+            className="w-full rounded-lg bg-accent px-5 py-2.5 font-semibold text-white hover:bg-accent-hover disabled:opacity-60 sm:w-auto"
+          >
+            {busy ? 'Сохранение…' : 'Сохранить скрипт'}
+          </button>
+        </div>
       </div>
     </section>
   )
