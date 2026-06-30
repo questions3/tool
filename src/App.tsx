@@ -162,10 +162,6 @@ export default function App() {
           </>
         )}
       </main>
-
-      <footer className="mx-auto max-w-3xl px-6 pb-8 pt-2 text-center text-xs text-slate-400">
-        Convvy · internal tool
-      </footer>
     </div>
   )
 }
