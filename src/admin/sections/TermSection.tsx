@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Language, Localized, Objection, Stage } from '../../types'
 import type { TermInput } from '../../data/repository'
-import { pick } from '../../i18n/ui'
+import { hasLang } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
 
 type Term = Objection | Stage
@@ -19,6 +19,8 @@ interface Props {
   title: string
   /** Слово в единственном числе для кнопки «Добавить …». */
   singular: string
+  /** Активный язык заполнения (общий переключатель в шапке). */
+  lang: string
   languages: Language[]
   items: Term[]
   onSave: (input: TermInput) => Promise<void>
@@ -33,6 +35,7 @@ function emptyDraft(sortOrder: number): DraftTerm {
 export function TermSection({
   title,
   singular,
+  lang,
   languages,
   items,
   onSave,
@@ -42,6 +45,8 @@ export function TermSection({
   const [draft, setDraft] = useState<DraftTerm | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const langName = languages.find((l) => l.code === lang)?.name
 
   function startCreate() {
     setError(null)
@@ -66,6 +71,10 @@ export function TermSection({
       setError('Slug обязателен (латиница, напр. no_funds).')
       return
     }
+    if (!(draft.label[lang] ?? '').trim()) {
+      setError(`Заполните название для языка ${lang.toUpperCase()}.`)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -80,7 +89,9 @@ export function TermSection({
   }
 
   async function remove(t: Term) {
-    if (!confirm(`Удалить «${pick(t.label, 'ru') || t.slug}»?`)) return
+    const name = t.label[lang] || Object.values(t.label)[0] || t.slug
+    if (!confirm(`Удалить «${name}»? Будут удалены все языки этого элемента.`))
+      return
     setBusy(true)
     try {
       await onDelete(t.id)
@@ -113,19 +124,40 @@ export function TermSection({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate font-medium text-slate-900">
-                  {pick(t.label, 'ru') || <em className="text-slate-400">—</em>}
+                  {t.label[lang] || (
+                    <em className="text-slate-400">
+                      нет перевода ({lang.toUpperCase()})
+                    </em>
+                  )}
                 </span>
                 <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
                   {t.slug}
                 </code>
                 {t.isEnabled === false && (
-                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
+                  <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
                     выключено
                   </span>
                 )}
               </div>
-              <div className="truncate text-sm text-slate-500">
-                {pick(t.hint, 'ru')}
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {languages.map((l) => (
+                  <span
+                    key={l.code}
+                    title={l.name}
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                      hasLang(t.label, l.code)
+                        ? 'bg-accent-soft text-accent'
+                        : 'bg-slate-100 text-slate-300'
+                    }`}
+                  >
+                    {l.code.toUpperCase()}
+                  </span>
+                ))}
+                {t.hint[lang] && (
+                  <span className="ml-1 truncate text-sm text-slate-500">
+                    {t.hint[lang]}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
@@ -155,7 +187,8 @@ export function TermSection({
       {draft && (
         <div className="mt-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
           <h3 className="font-semibold text-slate-900">
-            {draft.id ? 'Редактирование' : `Новый: ${singular}`}
+            {draft.id ? 'Редактирование' : `Новый: ${singular}`} ·{' '}
+            <span className="text-accent">{lang.toUpperCase()}</span>
           </h3>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -178,7 +211,10 @@ export function TermSection({
                 type="number"
                 value={draft.sortOrder}
                 onChange={(e) =>
-                  setDraft({ ...draft, sortOrder: Number(e.target.value) })
+                  setDraft({
+                    ...draft,
+                    sortOrder: Number(e.target.value) || 0,
+                  })
                 }
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
@@ -188,13 +224,15 @@ export function TermSection({
           <LocalizedInput
             label="Название (label)"
             value={draft.label}
-            languages={languages}
+            lang={lang}
+            langName={langName}
             onChange={(label) => setDraft({ ...draft, label })}
           />
           <LocalizedInput
             label="Подсказка (hint)"
             value={draft.hint}
-            languages={languages}
+            lang={lang}
+            langName={langName}
             onChange={(hint) => setDraft({ ...draft, hint })}
           />
 

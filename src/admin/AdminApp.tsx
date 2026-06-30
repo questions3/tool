@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useAdminAuth } from '../hooks/useAdminAuth'
 import { useAdminData } from './useAdminData'
@@ -30,6 +30,18 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'market', label: 'Рынок' },
   { id: 'agents', label: 'Агенты' },
 ]
+
+/** Вкладки с локализованным контентом — для них показываем «Язык заполнения». */
+const CONTENT_TABS: Tab[] = [
+  'objections',
+  'stages',
+  'rebuttals',
+  'presentation',
+  'service',
+  'market',
+]
+
+const LANG_KEY = 'convvy.admin.lang'
 
 export default function AdminApp() {
   const auth = useAdminAuth()
@@ -87,7 +99,21 @@ function Dashboard({
   onSignOut: () => void
 }) {
   const [tab, setTab] = useState<Tab>('languages')
+  const [activeLang, setActiveLang] = useState<string>(
+    () => localStorage.getItem(LANG_KEY) ?? 'ru',
+  )
   const data = useAdminData()
+
+  useEffect(() => {
+    localStorage.setItem(LANG_KEY, activeLang)
+  }, [activeLang])
+
+  // Активный язык всегда должен быть среди доступных.
+  useEffect(() => {
+    if (data.languages.length && !data.languages.some((l) => l.code === activeLang)) {
+      setActiveLang(data.languages[0].code)
+    }
+  }, [data.languages, activeLang])
 
   return (
     <div className="min-h-dvh bg-slate-50">
@@ -129,6 +155,30 @@ function Dashboard({
             </button>
           ))}
         </nav>
+
+        {CONTENT_TABS.includes(tab) && data.languages.length > 0 && (
+          <div className="border-t border-slate-100 bg-slate-50/70">
+            <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-1.5 px-4 py-2 sm:px-6">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Язык заполнения
+              </span>
+              {data.languages.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => setActiveLang(l.code)}
+                  title={l.name}
+                  className={`rounded-md px-2.5 py-1 text-sm font-medium transition ${
+                    activeLang === l.code
+                      ? 'bg-accent text-white'
+                      : 'border border-slate-200 bg-white text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {l.code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
@@ -145,6 +195,7 @@ function Dashboard({
             )}
             {tab === 'objections' && (
               <ObjectionsSection
+                lang={activeLang}
                 languages={data.languages}
                 objections={data.objections}
                 onChanged={data.reload}
@@ -152,6 +203,7 @@ function Dashboard({
             )}
             {tab === 'stages' && (
               <StagesSection
+                lang={activeLang}
                 languages={data.languages}
                 stages={data.stages}
                 onChanged={data.reload}
@@ -159,6 +211,7 @@ function Dashboard({
             )}
             {tab === 'rebuttals' && (
               <RebuttalsSection
+                lang={activeLang}
                 languages={data.languages}
                 objections={data.objections}
                 stages={data.stages}
@@ -170,6 +223,7 @@ function Dashboard({
               <EntriesSection
                 section="presentation"
                 title="Презентации"
+                lang={activeLang}
                 languages={data.languages}
               />
             )}
@@ -177,6 +231,7 @@ function Dashboard({
               <EntriesSection
                 section="service"
                 title="Сервисы"
+                lang={activeLang}
                 languages={data.languages}
               />
             )}
@@ -184,6 +239,7 @@ function Dashboard({
               <EntriesSection
                 section="market"
                 title="Рынок"
+                lang={activeLang}
                 languages={data.languages}
               />
             )}
