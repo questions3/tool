@@ -216,3 +216,49 @@ export async function deleteBranch(id: string): Promise<void> {
   const { error } = await db().from('branches').delete().eq('id', id)
   if (error) throw error
 }
+
+/* ─────────────── Агенты (белый список email для OTP-входа) ─────────────── */
+
+export interface AgentEmail {
+  email: string
+  note: string | null
+  createdAt: string
+}
+
+interface AgentEmailRow {
+  email: string
+  note: string | null
+  created_at: string
+}
+
+/** Список разрешённых email агентов. Чтение доступно только админам (RLS). */
+export async function fetchAgentEmails(): Promise<AgentEmail[]> {
+  const { data, error } = await db()
+    .from('agent_emails')
+    .select('*')
+    .order('created_at')
+  if (error) throw error
+  return (data as AgentEmailRow[]).map((r) => ({
+    email: r.email,
+    note: r.note,
+    createdAt: r.created_at,
+  }))
+}
+
+export async function saveAgentEmail(input: {
+  email: string
+  note: string | null
+}): Promise<void> {
+  const { error } = await db()
+    .from('agent_emails')
+    .upsert(
+      { email: input.email, note: input.note },
+      { onConflict: 'email' },
+    )
+  if (error) throw error
+}
+
+export async function deleteAgentEmail(email: string): Promise<void> {
+  const { error } = await db().from('agent_emails').delete().eq('email', email)
+  if (error) throw error
+}
