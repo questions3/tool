@@ -6,6 +6,37 @@ import { LocalizedInput } from '../components/LocalizedInput'
 
 type Term = Objection | Stage
 
+/** Транслитерация кириллицы для авто-генерации slug из заголовка. */
+const TRANSLIT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
+  и: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
+  с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch',
+  ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .split('')
+    .map((ch) => TRANSLIT[ch] ?? ch)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40)
+}
+
+/** Гарантирует уникальность slug среди существующих записей. */
+function uniqueSlug(base: string, items: Term[], currentId?: string): string {
+  const taken = new Set(
+    items.filter((t) => t.id !== currentId).map((t) => t.slug),
+  )
+  const root = base || 'term'
+  let slug = root
+  let n = 2
+  while (taken.has(slug)) slug = `${root}_${n++}`
+  return slug
+}
+
 interface DraftTerm {
   id?: string
   slug: string
@@ -67,18 +98,17 @@ export function TermSection({
 
   async function save() {
     if (!draft) return
-    if (!draft.slug.trim()) {
-      setError('Slug обязателен (латиница, напр. no_funds).')
-      return
-    }
-    if (!(draft.label[lang] ?? '').trim()) {
+    const title = (draft.label[lang] ?? '').trim()
+    if (!title) {
       setError(`Заполните название для языка ${lang.toUpperCase()}.`)
       return
     }
+    // Slug сохраняется при редактировании; для новых — генерируется из заголовка.
+    const slug = draft.slug.trim() || uniqueSlug(slugify(title), items, draft.id)
     setBusy(true)
     setError(null)
     try {
-      await onSave({ ...draft, slug: draft.slug.trim() })
+      await onSave({ ...draft, slug })
       await onChanged()
       setDraft(null)
     } catch (e) {
@@ -130,9 +160,6 @@ export function TermSection({
                     </em>
                   )}
                 </span>
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
-                  {t.slug}
-                </code>
                 {t.isEnabled === false && (
                   <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
                     выключено
@@ -191,35 +218,19 @@ export function TermSection({
             <span className="text-accent">{lang.toUpperCase()}</span>
           </h3>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Slug
-              </span>
-              <input
-                value={draft.slug}
-                onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
-                placeholder="no_funds"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Порядок (sort)
-              </span>
-              <input
-                type="number"
-                value={draft.sortOrder}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    sortOrder: Number(e.target.value) || 0,
-                  })
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </label>
-          </div>
+          <label className="flex flex-col gap-1 sm:max-w-[12rem]">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Порядок (sort)
+            </span>
+            <input
+              type="number"
+              value={draft.sortOrder}
+              onChange={(e) =>
+                setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })
+              }
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            />
+          </label>
 
           <LocalizedInput
             label="Название (label)"

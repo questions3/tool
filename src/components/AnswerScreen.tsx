@@ -39,13 +39,13 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
         </div>
       )}
 
-      {/* Базовый скрипт */}
+      {/* Базовый скрипт — копирование вынесено в крупную кнопку */}
       <section className="mt-6">
         <SectionTitle>{t('baseAnswer', lang)}</SectionTitle>
-        <ScriptCard lang={lang} text={pick(rebuttal.answer, lang)} accent />
+        <ScriptCard lang={lang} text={pick(rebuttal.answer, lang)} prominent />
       </section>
 
-      {/* Ветви what-if */}
+      {/* Ветви what-if — условие вынесено в заголовок ветки */}
       {branches.length > 0 && (
         <section className="mt-8">
           <SectionTitle>{t('whatIf', lang)}</SectionTitle>
@@ -55,16 +55,11 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
                 key={i}
                 className="card rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
               >
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-base font-semibold text-accent">
-                    {pick(b.label, lang)}
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    <span className="font-semibold text-slate-700">
-                      {t('condition', lang)}:
-                    </span>{' '}
-                    {pick(b.condition, lang)}
-                  </span>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+                  {pick(b.label, lang)} · {t('condition', lang)}
+                </div>
+                <div className="mt-1 text-base font-semibold leading-snug text-slate-900">
+                  {pick(b.condition, lang)}
                 </div>
                 <div className="mt-3">
                   <ScriptCard lang={lang} text={pick(b.response, lang)} />
@@ -89,11 +84,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function ScriptCard({
   lang,
   text,
-  accent = false,
+  prominent = false,
 }: {
   lang: Lang
   text: string
-  accent?: boolean
+  prominent?: boolean
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -107,14 +102,26 @@ function ScriptCard({
     }
   }
 
+  // Базовый ответ: крупная кнопка копирования (главное действие оператора).
+  if (prominent) {
+    return (
+      <div className="mt-3">
+        <div className="whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+          {text}
+        </div>
+        <button
+          onClick={copy}
+          className="mt-3 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover"
+        >
+          {copied ? `✓ ${t('copied', lang)}` : t('copyAnswer', lang)}
+        </button>
+      </div>
+    )
+  }
+
+  // Ответ ветки: компактная карточка с кнопкой в углу.
   return (
-    <div
-      className={`relative rounded-lg border p-4 pr-24 leading-relaxed ${
-        accent
-          ? 'mt-3 border-accent/30 bg-accent-soft text-[15px] text-slate-900'
-          : 'border-slate-200 bg-slate-50 text-sm text-slate-700'
-      }`}
-    >
+    <div className="relative whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-4 pr-24 text-sm leading-relaxed text-slate-700">
       {text}
       <button
         onClick={copy}
