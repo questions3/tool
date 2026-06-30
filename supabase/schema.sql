@@ -259,6 +259,26 @@ create policy "admin read self" on public.admins for select using (public.is_adm
 create policy "admin manage"    on public.admins for all    using (public.is_admin()) with check (public.is_admin());
 
 -- ============================================================
+-- 7b. МИНИМИЗАЦИЯ ПРАВ anon (defense-in-depth)
+-- RLS уже блокирует запись анонимам, но по умолчанию PostgREST выдаёт
+-- ролям anon/authenticated ALL на таблицы public. Снимаем у anon всё,
+-- кроме чтения контента, чтобы запись была невозможна и на уровне грантов.
+-- ============================================================
+revoke insert, update, delete, truncate, references, trigger
+  on public.languages, public.objections, public.stages,
+     public.rebuttals, public.branches, public.entries
+  from anon;
+
+-- Служебные таблицы: anon обращается к ним только через SECURITY DEFINER
+-- RPC is_agent_allowed (не зависит от этих грантов) — убираем доступ целиком.
+revoke all privileges on public.agent_emails from anon;
+revoke all privileges on public.admins       from anon;
+
+-- Проверка email в белом списке нужна только ДО входа (роль anon);
+-- авторизованному агенту — нет (иначе возможен перебор email).
+revoke execute on function public.is_agent_allowed(text) from authenticated;
+
+-- ============================================================
 -- 8. НАЗНАЧИТЬ СЕБЯ АДМИНОМ
 -- ============================================================
 -- 1) Создать пользователя: Supabase → Authentication → Users → Add user (email+пароль)
