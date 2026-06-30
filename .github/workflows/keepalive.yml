@@ -1,0 +1,36 @@
+name: Supabase keep-alive
+
+# Бесплатный проект Supabase засыпает после ~7 дней без активности, и тогда
+# приложение перестаёт работать до ручного восстановления в дашборде.
+# Этот воркфлоу дважды в день делает лёгкий запрос к БД (SELECT одной строки),
+# что считается активностью и сбрасывает таймер паузы.
+#
+# Нужны два секрета репозитория (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL       — https://<ref>.supabase.co
+#   SUPABASE_ANON_KEY  — публичный anon/publishable-ключ (тот же, что в Netlify)
+
+on:
+  schedule:
+    # Не на ровном часе — GitHub задерживает запуски в пиковые минуты.
+    - cron: '17 6 * * *'   # 06:17 UTC ежедневно
+    - cron: '17 18 * * *'  # 18:17 UTC ежедневно
+  workflow_dispatch: {}     # ручной запуск для проверки
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Supabase REST (keeps the project active)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Missing SUPABASE_URL or SUPABASE_ANON_KEY repo secret."
+            exit 1
+          fi
+          curl -fsS \
+            "$SUPABASE_URL/rest/v1/languages?select=code&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -o /dev/null -w "Supabase keep-alive OK — HTTP %{http_code}\n"
