@@ -251,6 +251,13 @@ export const ui = {
     de: 'Antwort',
     es: 'Respuesta',
   },
+  stepperEntry: {
+    ru: 'Материал',
+    pl: 'Materiał',
+    en: 'Item',
+    de: 'Eintrag',
+    es: 'Material',
+  },
 
   // Answer screen
   baseAnswer: {
