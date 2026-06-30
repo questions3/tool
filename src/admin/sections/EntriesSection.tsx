@@ -6,6 +6,8 @@ interface Props {
   section: SectionId
   /** Заголовок раздела («Презентации» и т.п.). */
   title: string
+  /** Активный язык заполнения (общий переключатель в шапке). */
+  lang: string
   languages: Language[]
 }
 
@@ -29,8 +31,7 @@ function has(value: Localized, code: string): boolean {
  * для него. Элемент — общая запись с переводами; переключив язык, можно
  * добавить перевод к тому же элементу (остальные языки сохраняются).
  */
-export function EntriesSection({ section, title, languages }: Props) {
-  const [activeLang, setActiveLang] = useState(languages[0]?.code ?? 'ru')
+export function EntriesSection({ section, title, lang, languages }: Props) {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,15 +55,8 @@ export function EntriesSection({ section, title, languages }: Props) {
     void reload()
   }, [reload])
 
-  // Активный язык всегда должен быть среди доступных.
-  useEffect(() => {
-    if (languages.length && !languages.some((l) => l.code === activeLang)) {
-      setActiveLang(languages[0].code)
-    }
-  }, [languages, activeLang])
-
   const langName =
-    languages.find((l) => l.code === activeLang)?.name ?? activeLang.toUpperCase()
+    languages.find((l) => l.code === lang)?.name ?? lang.toUpperCase()
 
   function startCreate() {
     setFormError(null)
@@ -82,20 +76,20 @@ export function EntriesSection({ section, title, languages }: Props) {
 
   function setField(field: 'title' | 'body', value: string) {
     setDraft((d) =>
-      d ? { ...d, [field]: { ...d[field], [activeLang]: value } } : d,
+      d ? { ...d, [field]: { ...d[field], [lang]: value } } : d,
     )
   }
 
   async function save() {
     if (!draft) return
-    const titleText = (draft.title[activeLang] ?? '').trim()
-    const bodyText = (draft.body[activeLang] ?? '').trim()
+    const titleText = (draft.title[lang] ?? '').trim()
+    const bodyText = (draft.body[lang] ?? '').trim()
     if (!titleText) {
-      setFormError(`Заполните заголовок для языка ${activeLang.toUpperCase()}.`)
+      setFormError(`Заполните заголовок для языка ${lang.toUpperCase()}.`)
       return
     }
     if (!bodyText) {
-      setFormError(`Заполните контент для языка ${activeLang.toUpperCase()}.`)
+      setFormError(`Заполните контент для языка ${lang.toUpperCase()}.`)
       return
     }
     setBusy(true)
@@ -104,8 +98,8 @@ export function EntriesSection({ section, title, languages }: Props) {
       await saveEntry({
         id: draft.id,
         section,
-        title: { ...draft.title, [activeLang]: titleText },
-        body: { ...draft.body, [activeLang]: bodyText },
+        title: { ...draft.title, [lang]: titleText },
+        body: { ...draft.body, [lang]: bodyText },
         isEnabled: draft.isEnabled,
         sortOrder: draft.sortOrder,
       })
@@ -119,7 +113,7 @@ export function EntriesSection({ section, title, languages }: Props) {
   }
 
   async function remove(e: Entry) {
-    const name = e.title[activeLang] || Object.values(e.title)[0] || '—'
+    const name = e.title[lang] || Object.values(e.title)[0] || '—'
     if (!confirm(`Удалить «${name}»? Будут удалены все языки этого элемента.`))
       return
     setBusy(true)
@@ -146,30 +140,9 @@ export function EntriesSection({ section, title, languages }: Props) {
         </button>
       </div>
       <p className="mb-4 text-sm text-slate-500">
-        Сначала выберите язык заполнения, затем заполните поля. Переключив язык,
+        Выберите язык заполнения в шапке, затем заполните поля. Переключив язык,
         можно добавить перевод к тому же элементу.
       </p>
-
-      {/* Шаг 1 — выбор языка */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Язык заполнения
-        </span>
-        {languages.map((l) => (
-          <button
-            key={l.code}
-            onClick={() => setActiveLang(l.code)}
-            title={l.name}
-            className={`rounded-md px-2.5 py-1 text-sm font-medium transition ${
-              activeLang === l.code
-                ? 'bg-accent text-white'
-                : 'border border-slate-200 text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            {l.code.toUpperCase()}
-          </button>
-        ))}
-      </div>
 
       {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
       {error && (
@@ -188,9 +161,9 @@ export function EntriesSection({ section, title, languages }: Props) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="truncate font-medium text-slate-900">
-                    {e.title[activeLang] || (
+                    {e.title[lang] || (
                       <em className="text-slate-400">
-                        нет перевода ({activeLang.toUpperCase()})
+                        нет перевода ({lang.toUpperCase()})
                       </em>
                     )}
                   </span>
@@ -247,16 +220,16 @@ export function EntriesSection({ section, title, languages }: Props) {
           <h3 className="font-semibold text-slate-900">
             {draft.id ? 'Редактирование' : 'Новый элемент'} ·{' '}
             <span className="text-accent">
-              {activeLang.toUpperCase()} · {langName}
+              {lang.toUpperCase()} · {langName}
             </span>
           </h3>
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Заголовок ({activeLang.toUpperCase()})
+              Заголовок ({lang.toUpperCase()})
             </span>
             <input
-              value={draft.title[activeLang] ?? ''}
+              value={draft.title[lang] ?? ''}
               onChange={(e) => setField('title', e.target.value)}
               placeholder="Заголовок в списке"
               className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
@@ -265,11 +238,11 @@ export function EntriesSection({ section, title, languages }: Props) {
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Контент ({activeLang.toUpperCase()})
+              Контент ({lang.toUpperCase()})
             </span>
             <textarea
               rows={5}
-              value={draft.body[activeLang] ?? ''}
+              value={draft.body[lang] ?? ''}
               onChange={(e) => setField('body', e.target.value)}
               placeholder="Текст спича / презентации"
               className="resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"

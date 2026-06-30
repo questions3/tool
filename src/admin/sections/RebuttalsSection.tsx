@@ -12,10 +12,11 @@ import {
   saveBranch,
   saveRebuttal,
 } from '../../data/repository'
-import { pick } from '../../i18n/ui'
+import { hasLang, pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
 
 interface Props {
+  lang: string
   languages: Language[]
   objections: Objection[]
   stages: Stage[]
@@ -48,12 +49,14 @@ function toForm(r: Rebuttal | undefined): Form {
 }
 
 export function RebuttalsSection({
+  lang,
   languages,
   objections,
   stages,
   rebuttals,
   onChanged,
 }: Props) {
+  const langName = languages.find((l) => l.code === lang)?.name
   const [objId, setObjId] = useState(objections[0]?.id ?? '')
   const [stageId, setStageId] = useState(stages[0]?.id ?? '')
   const current = rebuttals.find(
@@ -104,6 +107,10 @@ export function RebuttalsSection({
   async function save() {
     if (!objId || !stageId) {
       setError('Выберите возражение и этап.')
+      return
+    }
+    if (!(form.answer[lang] ?? '').trim()) {
+      setError(`Заполните базовый ответ для языка ${lang.toUpperCase()}.`)
       return
     }
     setBusy(true)
@@ -160,7 +167,7 @@ export function RebuttalsSection({
           >
             {objections.map((o) => (
               <option key={o.id} value={o.id}>
-                {pick(o.label, 'ru') || o.slug}
+                {pick(o.label, lang) || o.slug}
               </option>
             ))}
           </select>
@@ -176,7 +183,7 @@ export function RebuttalsSection({
           >
             {stages.map((s) => (
               <option key={s.id} value={s.id}>
-                {pick(s.label, 'ru') || s.slug}
+                {pick(s.label, lang) || s.slug}
               </option>
             ))}
           </select>
@@ -187,10 +194,29 @@ export function RebuttalsSection({
         <LocalizedInput
           label="Базовый ответ (answer)"
           value={form.answer}
-          languages={languages}
+          lang={lang}
+          langName={langName}
           onChange={(answer) => setForm((f) => ({ ...f, answer }))}
           multiline
         />
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[11px] font-medium uppercase text-slate-400">
+            Переводы ответа:
+          </span>
+          {languages.map((l) => (
+            <span
+              key={l.code}
+              title={l.name}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                hasLang(form.answer, l.code)
+                  ? 'bg-accent-soft text-accent'
+                  : 'bg-slate-100 text-slate-300'
+              }`}
+            >
+              {l.code.toUpperCase()}
+            </span>
+          ))}
+        </div>
 
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
@@ -234,19 +260,22 @@ export function RebuttalsSection({
                 <LocalizedInput
                   label="Заголовок (label)"
                   value={b.label}
-                  languages={languages}
+                  lang={lang}
+                  langName={langName}
                   onChange={(label) => patchBranch(i, { label })}
                 />
                 <LocalizedInput
                   label="Условие (condition)"
                   value={b.condition}
-                  languages={languages}
+                  lang={lang}
+                  langName={langName}
                   onChange={(condition) => patchBranch(i, { condition })}
                 />
                 <LocalizedInput
                   label="Ответ (response)"
                   value={b.response}
-                  languages={languages}
+                  lang={lang}
+                  langName={langName}
                   onChange={(response) => patchBranch(i, { response })}
                   multiline
                 />
