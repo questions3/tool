@@ -124,6 +124,36 @@ revoke execute on function public.is_admin() from anon, public;
 grant execute on function public.is_admin() to authenticated;
 
 -- ============================================================
+-- 6b. БЕЛЫЙ СПИСОК EMAIL АГЕНТОВ (вход по OTP-коду на /)
+-- ============================================================
+create table if not exists public.agent_emails (
+  email      text primary key,                   -- email агента (логин)
+  note       text,                               -- имя/заметка
+  created_at timestamptz not null default now()
+);
+
+alter table public.agent_emails enable row level security;
+
+-- Управление списком — только админам.
+drop policy if exists "admin manage agent_emails" on public.agent_emails;
+create policy "admin manage agent_emails" on public.agent_emails
+  for all using (public.is_admin()) with check (public.is_admin());
+
+-- Проверка «разрешён ли email» — доступна анонимам ДО входа,
+-- но не раскрывает сам список (SECURITY DEFINER, возвращает только boolean).
+create or replace function public.is_agent_allowed(p_email text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.agent_emails a
+    where lower(a.email) = lower(trim(p_email))
+  );
+$$;
+
+revoke execute on function public.is_agent_allowed(text) from public;
+grant execute on function public.is_agent_allowed(text) to anon, authenticated;
+
+-- ============================================================
 -- 7. RLS
 -- ============================================================
 alter table public.languages  enable row level security;

@@ -17,18 +17,42 @@ export const ui = {
     ru: 'Доступ только для сотрудников Convvy',
     pl: 'Dostęp tylko dla pracowników Convvy',
   },
-  passwordLabel: { ru: 'Пароль доступа', pl: 'Hasło dostępu' },
-  passwordPlaceholder: { ru: 'Введите пароль', pl: 'Wpisz hasło' },
   enter: { ru: 'Войти', pl: 'Zaloguj' },
   logout: { ru: 'Выйти', pl: 'Wyloguj' },
-  invalidPassword: { ru: 'Неверный пароль', pl: 'Błędne hasło' },
-  passwordHint: {
-    ru: 'Пароль выдаёт администратор',
-    pl: 'Hasło udostępnia administrator',
+
+  // Auth — вход по коду на email (OTP)
+  emailLabel: { ru: 'Рабочий email', pl: 'Służbowy email' },
+  emailPlaceholder: { ru: 'agent@convvy.com', pl: 'agent@convvy.com' },
+  sendCode: { ru: 'Получить код', pl: 'Wyślij kod' },
+  sending: { ru: 'Отправляем…', pl: 'Wysyłanie…' },
+  codeLabel: { ru: 'Код из письма', pl: 'Kod z e-maila' },
+  codePlaceholder: { ru: '6-значный код', pl: '6-cyfrowy kod' },
+  verifying: { ru: 'Проверяем…', pl: 'Sprawdzanie…' },
+  codeSentTo: {
+    ru: 'Мы отправили код на',
+    pl: 'Wysłaliśmy kod na adres',
   },
-  defaultPasswordWarning: {
-    ru: 'Задан пароль по умолчанию. Установите VITE_APP_PASSWORD в Netlify.',
-    pl: 'Ustawiono hasło domyślne. Ustaw VITE_APP_PASSWORD w Netlify.',
+  changeEmail: { ru: 'Изменить email', pl: 'Zmień email' },
+  resendCode: { ru: 'Отправить код ещё раз', pl: 'Wyślij kod ponownie' },
+  emailHint: {
+    ru: 'Доступ выдаёт администратор, добавляя ваш email в список агентов',
+    pl: 'Dostęp nadaje administrator, dodając Twój email do listy agentów',
+  },
+  errEmailNotAllowed: {
+    ru: 'Этот email не в списке агентов. Обратитесь к администратору.',
+    pl: 'Tego adresu nie ma na liście agentów. Skontaktuj się z administratorem.',
+  },
+  errSendFailed: {
+    ru: 'Не удалось отправить код. Попробуйте ещё раз.',
+    pl: 'Nie udało się wysłać kodu. Spróbuj ponownie.',
+  },
+  errInvalidCode: {
+    ru: 'Неверный или просроченный код.',
+    pl: 'Nieprawidłowy lub wygasły kod.',
+  },
+  errNotConfigured: {
+    ru: 'Вход недоступен: не настроен Supabase.',
+    pl: 'Logowanie niedostępne: brak konfiguracji Supabase.',
   },
 
   // Steps
