@@ -35,8 +35,8 @@ export const ui = {
   changeEmail: { ru: 'Изменить email', pl: 'Zmień email' },
   resendCode: { ru: 'Отправить код ещё раз', pl: 'Wyślij kod ponownie' },
   emailHint: {
-    ru: 'Доступ выдаёт администратор, добавляя ваш email в список агентов',
-    pl: 'Dostęp nadaje administrator, dodając Twój email do listy agentów',
+    ru: 'Запросите доступ у администратора, предоставив рабочий email',
+    pl: 'Poproś administratora o dostęp, podając służbowy email',
   },
   errEmailNotAllowed: {
     ru: 'Этот email не в списке агентов. Обратитесь к администратору.',

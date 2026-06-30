@@ -194,7 +194,7 @@ export function Login({
         </div>
 
         <p className="mt-4 text-center text-xs text-slate-400">
-          {configured ? t('emailHint', lang) : t('errNotConfigured', lang)}
+          {t('emailHint', lang)}
         </p>
       </div>
     </div>
