@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Language } from '../../types'
 import { deleteLanguage, saveLanguage } from '../../data/repository'
+import { useConfirm } from '../components/Confirm'
 
 interface Props {
   languages: Language[]
@@ -19,6 +20,7 @@ export function LanguagesSection({ languages, onChanged }: Props) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   function startCreate() {
     setError(null)
@@ -66,12 +68,10 @@ export function LanguagesSection({ languages, onChanged }: Props) {
   }
 
   async function remove(l: Language) {
-    if (
-      !confirm(
-        `Удалить язык «${l.name}» (${l.code})?\nТексты на этом языке в JSONB останутся, но перестанут показываться.`,
-      )
-    )
-      return
+    const ok = await confirm({
+      message: `Удалить язык «${l.name}» (${l.code})?\nТексты на этом языке в JSONB останутся, но перестанут показываться.`,
+    })
+    if (!ok) return
     setBusy(true)
     try {
       await deleteLanguage(l.code)

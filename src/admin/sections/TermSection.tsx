@@ -3,6 +3,7 @@ import type { Language, Localized, Objection, Stage } from '../../types'
 import type { TermInput } from '../../data/repository'
 import { hasLang } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
+import { useConfirm } from '../components/Confirm'
 
 type Term = Objection | Stage
 
@@ -76,6 +77,7 @@ export function TermSection({
   const [draft, setDraft] = useState<DraftTerm | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   const langName = languages.find((l) => l.code === lang)?.name
 
@@ -120,8 +122,10 @@ export function TermSection({
 
   async function remove(t: Term) {
     const name = t.label[lang] || Object.values(t.label)[0] || t.slug
-    if (!confirm(`Удалить «${name}»? Будут удалены все языки этого элемента.`))
-      return
+    const ok = await confirm({
+      message: `Удалить «${name}»? Будут удалены все языки этого элемента.`,
+    })
+    if (!ok) return
     setBusy(true)
     try {
       await onDelete(t.id)

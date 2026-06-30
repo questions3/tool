@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AgentEmail } from '../../data/repository'
 import { deleteAgentEmail, saveAgentEmail } from '../../data/repository'
+import { useConfirm } from '../components/Confirm'
 
 interface Props {
   agentEmails: AgentEmail[]
@@ -18,6 +19,7 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   async function add(e: React.FormEvent) {
     e.preventDefault()
@@ -46,7 +48,11 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
   }
 
   async function remove(a: AgentEmail) {
-    if (!confirm(`Убрать доступ для ${a.email}?`)) return
+    const ok = await confirm({
+      message: `Убрать доступ для ${a.email}?`,
+      confirmLabel: 'Убрать',
+    })
+    if (!ok) return
     setBusy(true)
     setError(null)
     try {
