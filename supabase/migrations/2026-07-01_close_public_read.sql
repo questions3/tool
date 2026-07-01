@@ -9,8 +9,10 @@
 -- ============================================================
 
 -- 1) Хелпер: имеет ли текущий пользователь право читать контент.
---    SECURITY DEFINER — сам читает agent_emails независимо от грантов роли.
---    auth.jwt()/auth.uid() внутри по-прежнему отражают реального вызывающего.
+--    Админа проверяем НАПРЯМУЮ по таблице (не через is_admin()), чтобы не
+--    зависеть от грантов на is_admin. SECURITY DEFINER читает admins/
+--    agent_emails независимо от прав роли; auth.uid()/auth.jwt() отражают
+--    реального вызывающего.
 create or replace function public.can_read_content()
 returns boolean
 language sql
@@ -19,16 +21,21 @@ security definer
 set search_path = public
 as $$
   select
-    public.is_admin()
+    exists (select 1 from public.admins a where a.user_id = auth.uid())
     or exists (
-      select 1 from public.agent_emails a
-      where lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+      select 1 from public.agent_emails ae
+      where lower(ae.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
     );
 $$;
 
 -- Функция возвращает только boolean о самом вызывающем — не раскрывает список.
 revoke execute on function public.can_read_content() from public;
 grant  execute on function public.can_read_content() to anon, authenticated;
+
+-- Политики admin-write объявлены FOR ALL → их условие is_admin() вычисляется
+-- и при SELECT. Без EXECUTE у anon чтение падает с permission denied, поэтому
+-- выдаём EXECUTE и анониму (для него is_admin() всегда false — утечки нет).
+grant execute on function public.is_admin() to anon;
 
 -- 2) Заменяем «публичное чтение (true)» на «только вошедший агент/админ».
 drop policy if exists "public read languages"  on public.languages;
