@@ -52,7 +52,7 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
       )}
 
       {!loading && !error && open && (
-        <CopyCard lang={lang} text={pick(open.body, lang)} />
+        <ContentCard text={pick(open.body, lang)} />
       )}
 
       {!loading && !error && !open && (
@@ -92,30 +92,10 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
   )
 }
 
-function CopyCard({ lang, text }: { lang: Lang; text: string }) {
-  const [copied, setCopied] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
-    } catch {
-      /* clipboard недоступен — игнорируем */
-    }
-  }
-
+function ContentCard({ text }: { text: string }) {
   return (
-    <div className="mt-5">
-      <div className="whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
-        {text}
-      </div>
-      <button
-        onClick={copy}
-        className="mt-3 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover"
-      >
-        {copied ? `✓ ${t('copied', lang)}` : t('copyAnswer', lang)}
-      </button>
+    <div className="mt-5 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+      {text}
     </div>
   )
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Lang, Rebuttal } from '../types'
 import { hasLang, pick, t } from '../i18n/ui'
 
@@ -39,10 +38,10 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
         </div>
       )}
 
-      {/* Базовый скрипт — копирование вынесено в крупную кнопку */}
+      {/* Базовый скрипт */}
       <section className="mt-6">
         <SectionTitle>{t('baseAnswer', lang)}</SectionTitle>
-        <ScriptCard lang={lang} text={pick(rebuttal.answer, lang)} prominent />
+        <ScriptCard text={pick(rebuttal.answer, lang)} prominent />
       </section>
 
       {/* Ветви what-if — условие вынесено в заголовок ветки */}
@@ -62,7 +61,7 @@ export function AnswerScreen({ lang, objectionLabel, stageLabel, rebuttal }: Pro
                   {pick(b.condition, lang)}
                 </div>
                 <div className="mt-3">
-                  <ScriptCard lang={lang} text={pick(b.response, lang)} />
+                  <ScriptCard text={pick(b.response, lang)} />
                 </div>
               </div>
             ))}
@@ -82,61 +81,25 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function ScriptCard({
-  lang,
   text,
   prominent = false,
 }: {
-  lang: Lang
   text: string
   prominent?: boolean
 }) {
-  const [copied, setCopied] = useState(false)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
-    } catch {
-      /* clipboard недоступен — игнорируем */
-    }
-  }
-
-  // Базовый ответ: крупная кнопка копирования (главное действие оператора).
+  // Базовый ответ — крупная выделенная карточка.
   if (prominent) {
     return (
-      <div className="mt-3">
-        <div className="whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
-          {text}
-        </div>
-        <button
-          onClick={copy}
-          className="mt-3 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover"
-        >
-          {copied ? `✓ ${t('copied', lang)}` : t('copyAnswer', lang)}
-        </button>
+      <div className="mt-3 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+        {text}
       </div>
     )
   }
 
-  // Ответ ветки: текст, кнопка под ним (без наложения на узких экранах).
+  // Ответ ветки.
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <div className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-        {text}
-      </div>
-      <div className="mt-2 flex justify-end">
-        <button
-          onClick={copy}
-          className={`rounded-md border px-2.5 py-1 text-xs font-medium transition ${
-            copied
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-500 hover:border-accent hover:text-accent'
-          }`}
-        >
-          {copied ? `✓ ${t('copied', lang)}` : t('copy', lang)}
-        </button>
-      </div>
+    <div className="whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+      {text}
     </div>
   )
 }

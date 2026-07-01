@@ -275,21 +275,6 @@ export const ui = {
     es: 'Variantes · what-if',
   },
   condition: { ru: 'Если', pl: 'Jeśli', en: 'If', de: 'Wenn', es: 'Si' },
-  copy: { ru: 'Копировать', pl: 'Kopiuj', en: 'Copy', de: 'Kopieren', es: 'Copiar' },
-  copyAnswer: {
-    ru: 'Копировать ответ',
-    pl: 'Kopiuj odpowiedź',
-    en: 'Copy answer',
-    de: 'Antwort kopieren',
-    es: 'Copiar respuesta',
-  },
-  copied: {
-    ru: 'Скопировано',
-    pl: 'Skopiowano',
-    en: 'Copied',
-    de: 'Kopiert',
-    es: 'Copiado',
-  },
   draftBadge: {
     ru: 'Черновик · ждём финальный текст',
     pl: 'Wersja robocza · czekamy na finał',
