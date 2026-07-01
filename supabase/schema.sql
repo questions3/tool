@@ -153,6 +153,22 @@ $$;
 revoke execute on function public.is_agent_allowed(text) from public;
 grant execute on function public.is_agent_allowed(text) to anon, authenticated;
 
+-- Чтение контента разрешено только вошедшему агенту (email в agent_emails)
+-- или админу. Используется в RLS-политиках чтения (раздел 7). Определена
+-- здесь, т.к. на неё ссылаются политики таблицы entries (раздел 6c ниже).
+create or replace function public.can_read_content()
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select
+    public.is_admin()
+    or exists (
+      select 1 from public.agent_emails a
+      where lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    );
+$$;
+revoke execute on function public.can_read_content() from public;
+grant  execute on function public.can_read_content() to anon, authenticated;
+
 -- ============================================================
 -- 6c. АТОМАРНЫЙ РЕОРДЕР (стрелки ▲/▼ в админке)
 -- Меняет местами sort_order двух строк в одной транзакции, чтобы
@@ -212,8 +228,10 @@ create trigger trg_entries_touch before update on public.entries
 create index if not exists idx_entries_section on public.entries(section, sort_order);
 
 alter table public.entries enable row level security;
+-- Чтение — только вошедший агент/админ (см. can_read_content ниже в разделе 7).
 drop policy if exists "public read entries" on public.entries;
-create policy "public read entries" on public.entries for select using (true);
+drop policy if exists "read entries" on public.entries;
+create policy "read entries" on public.entries for select using (public.can_read_content());
 drop policy if exists "admin write entries" on public.entries;
 create policy "admin write entries" on public.entries
   for all using (public.is_admin()) with check (public.is_admin());
@@ -228,17 +246,24 @@ alter table public.rebuttals  enable row level security;
 alter table public.branches   enable row level security;
 alter table public.admins     enable row level security;
 
--- Публичное чтение контента (anon + authenticated)
+-- Чтение контента: ТОЛЬКО вошедший агент/админ (функция can_read_content
+-- определена выше, в разделе 6b). Анонимам чтение закрыто — нельзя выкачать
+-- базу через REST API с anon-ключом.
 drop policy if exists "public read languages"  on public.languages;
 drop policy if exists "public read objections" on public.objections;
 drop policy if exists "public read stages"     on public.stages;
 drop policy if exists "public read rebuttals"  on public.rebuttals;
 drop policy if exists "public read branches"   on public.branches;
-create policy "public read languages"  on public.languages  for select using (true);
-create policy "public read objections" on public.objections for select using (true);
-create policy "public read stages"     on public.stages     for select using (true);
-create policy "public read rebuttals"  on public.rebuttals  for select using (true);
-create policy "public read branches"   on public.branches   for select using (true);
+drop policy if exists "read languages"  on public.languages;
+drop policy if exists "read objections" on public.objections;
+drop policy if exists "read stages"     on public.stages;
+drop policy if exists "read rebuttals"  on public.rebuttals;
+drop policy if exists "read branches"   on public.branches;
+create policy "read languages"  on public.languages  for select using (public.can_read_content());
+create policy "read objections" on public.objections for select using (public.can_read_content());
+create policy "read stages"     on public.stages     for select using (public.can_read_content());
+create policy "read rebuttals"  on public.rebuttals  for select using (public.can_read_content());
+create policy "read branches"   on public.branches   for select using (public.can_read_content());
 
 -- Запись — только админам
 drop policy if exists "admin write languages"  on public.languages;
