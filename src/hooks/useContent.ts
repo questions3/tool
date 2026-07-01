@@ -40,8 +40,12 @@ export interface ContentState {
 /**
  * Загружает языки/возражения/этапы для приложения агента. Если Supabase не
  * настроен — отдаёт встроенный статический контент (офлайн-фолбэк).
+ *
+ * `authed` — вошёл ли агент. Чтение контента в БД теперь закрыто RLS для
+ * анонимов, поэтому запрашиваем данные только после входа (и перезапрашиваем,
+ * когда `authed` становится true).
  */
-export function useContent(): ContentState {
+export function useContent(authed: boolean): ContentState {
   const usingFallback = !isSupabaseConfigured
   const [loading, setLoading] = useState(!usingFallback)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +64,11 @@ export function useContent(): ContentState {
 
   useEffect(() => {
     if (usingFallback) return
+    // До входа контент читать нельзя (RLS) — не дёргаем БД, ждём авторизацию.
+    if (!authed) {
+      setLoading(false)
+      return
+    }
     let cancelled = false
     const initial = reloadTick === 0
     // Фоновое обновление не показывает экран загрузки и не рушит контент
@@ -87,12 +96,12 @@ export function useContent(): ContentState {
     return () => {
       cancelled = true
     }
-  }, [usingFallback, reloadTick])
+  }, [usingFallback, authed, reloadTick])
 
   // Возврат к вкладке → подтягиваем свежий контент (админ мог его изменить).
   // Троттлинг 20с, чтобы быстрый alt-tab не порождал шквал запросов.
   useEffect(() => {
-    if (usingFallback) return
+    if (usingFallback || !authed) return
     function refresh() {
       if (document.visibilityState !== 'visible') return
       if (Date.now() - lastFetch.current < 20000) return
@@ -104,7 +113,7 @@ export function useContent(): ContentState {
       document.removeEventListener('visibilitychange', refresh)
       window.removeEventListener('focus', refresh)
     }
-  }, [usingFallback])
+  }, [usingFallback, authed])
 
   const loadRebuttal = useCallback(
     async (objectionId: string, stageId: string): Promise<Rebuttal | null> => {

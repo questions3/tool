@@ -32,7 +32,9 @@ function loadLang(): Lang {
 export default function App() {
   const { session, loading: authLoading, configured, requestCode, verifyCode, signOut } =
     useAuth()
-  const content = useContent()
+  // Контент читаем только после входа: в фолбэк-режиме (без Supabase) данные
+  // берутся статически, иначе — только при наличии сессии (RLS закрыл анонимов).
+  const content = useContent(!configured || !!session)
   const { languages, loadRebuttal } = content
 
   const [lang, setLang] = useState<Lang>(() => loadLang())
@@ -98,6 +100,7 @@ export default function App() {
   }
 
   return (
+    // Запрет копирования настроен глобально (main.tsx + index.css) на весь сайт.
     <div className="min-h-dvh">
       <Header
         lang={lang}
