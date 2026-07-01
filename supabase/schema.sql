@@ -118,10 +118,12 @@ language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.admins a where a.user_id = auth.uid());
 $$;
 
--- is_admin() нужен только роли authenticated (в RLS-политиках записи).
--- Закрываем доступ анонимам через /rest/v1/rpc (security advisor 0028).
-revoke execute on function public.is_admin() from anon, public;
-grant execute on function public.is_admin() to authenticated;
+-- is_admin() используется в RLS-политиках. Политики admin-write объявлены
+-- FOR ALL, поэтому их условие is_admin() вычисляется и при SELECT — значит
+-- EXECUTE нужен и anon, и authenticated, иначе чтение падает с permission
+-- denied. Для анонима is_admin() всегда false (auth.uid() = null), утечки нет.
+revoke execute on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
 
 -- ============================================================
 -- 6b. БЕЛЫЙ СПИСОК EMAIL АГЕНТОВ (вход по OTP-коду на /)
@@ -156,14 +158,17 @@ grant execute on function public.is_agent_allowed(text) to anon, authenticated;
 -- Чтение контента разрешено только вошедшему агенту (email в agent_emails)
 -- или админу. Используется в RLS-политиках чтения (раздел 7). Определена
 -- здесь, т.к. на неё ссылаются политики таблицы entries (раздел 6c ниже).
+-- Проверяем админа НАПРЯМУЮ по таблице (не через is_admin()), чтобы
+-- функция не зависела от грантов на is_admin. SECURITY DEFINER читает
+-- admins/agent_emails независимо от прав вызывающей роли.
 create or replace function public.can_read_content()
 returns boolean
 language sql stable security definer set search_path = public as $$
   select
-    public.is_admin()
+    exists (select 1 from public.admins a where a.user_id = auth.uid())
     or exists (
-      select 1 from public.agent_emails a
-      where lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+      select 1 from public.agent_emails ae
+      where lower(ae.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
     );
 $$;
 revoke execute on function public.can_read_content() from public;
