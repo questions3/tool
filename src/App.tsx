@@ -98,15 +98,8 @@ export default function App() {
   }
 
   return (
-    // Запрет копирования в агентской панели: текст нельзя выделить, а события
-    // copy/cut/контекстное меню перехватываются. Экран входа (Login) сюда не
-    // входит — он возвращается выше, поля ввода остаются рабочими.
-    <div
-      className="min-h-dvh select-none"
-      onCopy={(e) => e.preventDefault()}
-      onCut={(e) => e.preventDefault()}
-      onContextMenu={(e) => e.preventDefault()}
-    >
+    // Запрет копирования настроен глобально (main.tsx + index.css) на весь сайт.
+    <div className="min-h-dvh">
       <Header
         lang={lang}
         languages={langOptions}
