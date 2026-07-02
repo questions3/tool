@@ -24,6 +24,15 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+    # Не индексировать поисковиками/ботами (в дополнение к robots.txt и <meta>).
+    X-Robots-Tag = "noindex, nofollow"
+    # Только HTTPS на год вперёд.
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    # Content-Security-Policy: страница грузит ресурсы только со своего домена
+    # + шрифты Google Fonts, а сетевые запросы делает только к себе и в Supabase.
+    # Всё стороннее блокируется. ВНИМАНИЕ: connect-src содержит URL проекта
+    # Supabase — при смене проекта обновить здесь же.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://ahrxiqbpolykpyfwyoid.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
 
 # Захэшированные ассеты Vite можно кэшировать агрессивно и навсегда.
 [[headers]]
