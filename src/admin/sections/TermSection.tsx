@@ -90,9 +90,17 @@ export function TermSection({
   const [draft, setDraft] = useState<DraftTerm | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showUntranslated, setShowUntranslated] = useState(false)
   const confirm = useConfirm()
 
   const langName = languages.find((l) => l.code === lang)?.name
+
+  // По умолчанию показываем только элементы с переводом на выбранный язык
+  // (непереведённые агент и так не видит). Их можно раскрыть, чтобы дозаполнить.
+  const visible = showUntranslated
+    ? items
+    : items.filter((t) => hasLang(t.label, lang))
+  const hasUntranslated = items.some((t) => !hasLang(t.label, lang))
 
   function startCreate() {
     setError(null)
@@ -161,13 +169,13 @@ export function TermSection({
   /** Поменять местами с соседом (стрелки ↑/↓ в списке). */
   async function move(index: number, dir: -1 | 1) {
     const target = index + dir
-    if (busy || target < 0 || target >= items.length) return
+    if (busy || target < 0 || target >= visible.length) return
     setBusy(true)
     setError(null)
     try {
-      // Атомарный swap в одной транзакции — частичный сбой не оставит
-      // два одинаковых sort_order и не перепутает порядок.
-      await reorderSwap(table, items[index].id, items[target].id)
+      // Меняем местами с соседним ВИДИМЫМ элементом (скрытые без перевода
+      // пропускаем). Атомарный swap — порядок не разъедется при сбое.
+      await reorderSwap(table, visible[index].id, visible[target].id)
       await onChanged()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -188,8 +196,19 @@ export function TermSection({
         </button>
       </div>
 
+      {hasUntranslated && (
+        <button
+          onClick={() => setShowUntranslated((v) => !v)}
+          className="mb-3 text-xs font-medium text-slate-400 hover:text-slate-600"
+        >
+          {showUntranslated
+            ? '− Скрыть без перевода'
+            : '+ Показать без перевода'}
+        </button>
+      )}
+
       <ul className="space-y-2">
-        {items.map((t, idx) => (
+        {visible.map((t, idx) => (
           <li
             key={t.id}
             className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
@@ -242,7 +261,7 @@ export function TermSection({
                 </button>
                 <button
                   onClick={() => move(idx, 1)}
-                  disabled={busy || idx === items.length - 1}
+                  disabled={busy || idx === visible.length - 1}
                   aria-label="Ниже"
                   className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
                 >
@@ -265,9 +284,11 @@ export function TermSection({
             </div>
           </li>
         ))}
-        {items.length === 0 && (
+        {visible.length === 0 && (
           <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
-            Пока пусто
+            {items.length === 0
+              ? 'Пока пусто'
+              : `Нет элементов с переводом на ${lang.toUpperCase()}`}
           </li>
         )}
       </ul>
