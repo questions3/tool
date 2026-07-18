@@ -44,6 +44,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [showUntranslated, setShowUntranslated] = useState(false)
   const confirm = useConfirm()
 
   const reload = useCallback(async () => {
@@ -64,6 +65,13 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
 
   const langName =
     languages.find((l) => l.code === lang)?.name ?? lang.toUpperCase()
+
+  // По умолчанию показываем только элементы с переводом на выбранный язык
+  // (непереведённые агент и так не видит). Их можно раскрыть для дозаполнения.
+  const visible = showUntranslated
+    ? entries
+    : entries.filter((e) => has(e.title, lang))
+  const hasUntranslated = entries.some((e) => !has(e.title, lang))
 
   function startCreate() {
     setFormError(null)
@@ -142,13 +150,13 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
   /** Поменять местами с соседом (стрелки ↑/↓ в списке). */
   async function move(index: number, dir: -1 | 1) {
     const target = index + dir
-    if (busy || target < 0 || target >= entries.length) return
+    if (busy || target < 0 || target >= visible.length) return
     setBusy(true)
     setError(null)
     try {
-      // Атомарный swap в одной транзакции — частичный сбой не оставит
-      // два одинаковых sort_order и не перепутает порядок.
-      await reorderSwap('entries', entries[index].id, entries[target].id)
+      // Меняем местами с соседним ВИДИМЫМ элементом (скрытые без перевода
+      // пропускаем). Атомарный swap — порядок не разъедется при сбое.
+      await reorderSwap('entries', visible[index].id, visible[target].id)
       await reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -168,6 +176,16 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
           + Добавить
         </button>
       </div>
+      {hasUntranslated && !loading && !error && (
+        <button
+          onClick={() => setShowUntranslated((v) => !v)}
+          className="mb-1 text-xs font-medium text-slate-400 hover:text-slate-600"
+        >
+          {showUntranslated
+            ? '− Скрыть без перевода'
+            : '+ Показать без перевода'}
+        </button>
+      )}
       {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -177,7 +195,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
 
       {!loading && !error && (
         <ul className="space-y-2">
-          {entries.map((e, idx) => (
+          {visible.map((e, idx) => (
             <li
               key={e.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
@@ -225,7 +243,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
                   </button>
                   <button
                     onClick={() => move(idx, 1)}
-                    disabled={busy || idx === entries.length - 1}
+                    disabled={busy || idx === visible.length - 1}
                     aria-label="Ниже"
                     className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
                   >
@@ -248,9 +266,11 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
               </div>
             </li>
           ))}
-          {entries.length === 0 && (
+          {visible.length === 0 && (
             <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
-              Пока пусто — добавьте первый элемент
+              {entries.length === 0
+                ? 'Пока пусто — добавьте первый элемент'
+                : `Нет элементов с переводом на ${lang.toUpperCase()}`}
             </li>
           )}
         </ul>
