@@ -65,8 +65,22 @@ export function RebuttalsSection({
   onChanged,
 }: Props) {
   const langName = languages.find((l) => l.code === lang)?.name
-  const [objId, setObjId] = useState(objections[0]?.id ?? '')
-  const [stageId, setStageId] = useState(stages[0]?.id ?? '')
+  // В выпадашках показываем только возражения/этапы, заведённые на выбранном
+  // языке (у каждого языка — свой каталог возражений).
+  const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
+  const visibleStages = stages.filter((s) => hasLang(s.label, lang))
+  const [objId, setObjId] = useState(visibleObjections[0]?.id ?? '')
+  const [stageId, setStageId] = useState(visibleStages[0]?.id ?? '')
+
+  // При смене языка (или списков) держим выбор валидным для текущего языка:
+  // если текущее возражение/этап не относится к языку — сбрасываем на первый.
+  useEffect(() => {
+    const vObj = objections.filter((o) => hasLang(o.label, lang))
+    const vStg = stages.filter((s) => hasLang(s.label, lang))
+    setObjId((cur) => (vObj.some((o) => o.id === cur) ? cur : vObj[0]?.id ?? ''))
+    setStageId((cur) => (vStg.some((s) => s.id === cur) ? cur : vStg[0]?.id ?? ''))
+  }, [lang, objections, stages])
+
   const current = rebuttals.find(
     (r) => r.objectionId === objId && r.stageId === stageId,
   )
@@ -183,7 +197,7 @@ export function RebuttalsSection({
             onChange={(e) => setObjId(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           >
-            {objections.map((o) => (
+            {visibleObjections.map((o) => (
               <option key={o.id} value={o.id}>
                 {pick(o.label, lang) || o.slug}
               </option>
@@ -199,7 +213,7 @@ export function RebuttalsSection({
             onChange={(e) => setStageId(e.target.value)}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           >
-            {stages.map((s) => (
+            {visibleStages.map((s) => (
               <option key={s.id} value={s.id}>
                 {pick(s.label, lang) || s.slug}
               </option>
