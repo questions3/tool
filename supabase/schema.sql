@@ -174,6 +174,25 @@ $$;
 revoke execute on function public.can_read_content() from public;
 grant  execute on function public.can_read_content() to anon, authenticated;
 
+-- Индекс существующих скриптов: какие пары «возражение × этап» реально
+-- заполнены и на каких языках. Нужен агентскому приложению, чтобы на шаге
+-- «Этап» показывать только те карточки, где ответ есть (без этого ~2 клика
+-- из 3 упирались в «скрипт не найден»). Возвращает только id и коды языков.
+-- SECURITY INVOKER — RLS таблицы rebuttals работает как обычно (anon → 0 строк).
+create or replace function public.rebuttal_index()
+returns table (objection_id uuid, stage_id uuid, langs text[])
+language sql stable security invoker set search_path = public as $$
+  select r.objection_id,
+         r.stage_id,
+         (select array_agg(e.key)
+            from jsonb_each_text(r.answer) e
+           where trim(e.value) <> '') as langs
+  from public.rebuttals r
+  where not r.is_draft;
+$$;
+revoke execute on function public.rebuttal_index() from public;
+grant  execute on function public.rebuttal_index() to anon, authenticated;
+
 -- ============================================================
 -- 6c. АТОМАРНЫЙ РЕОРДЕР (стрелки ▲/▼ в админке)
 -- Меняет местами sort_order двух строк в одной транзакции, чтобы

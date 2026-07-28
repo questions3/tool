@@ -159,16 +159,30 @@ function ObjectionsFlow({
   setStageId: (id: string | null) => void
   loadRebuttal: (o: string, s: string) => Promise<Rebuttal | null>
 }) {
-  const { objections, stages } = content
+  const { objections, stages, rebuttalIndex } = content
 
   // Языковой фильтр: только переведённые на выбранный язык.
   const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
-  const visibleStages = stages.filter((s) => hasLang(s.label, lang))
 
   // Выбор и шаг считаем по ОТФИЛЬТРОВАННЫМ спискам: если активный выбор не
   // переведён на текущий язык, он просто «не существует» → шаг откатывается,
   // и мы не показываем чужой fallback-текст и не зависаем на пустом шаге 3.
   const objection = visibleObjections.find((o) => o.id === objectionId)
+
+  // Этапы: язык + наличие скрипта под выбранное возражение. Без этого агент
+  // видел бы все три этапа и в ~2 случаях из 3 упирался в «скрипт не найден».
+  // Пустой индекс (фолбэк/ошибка загрузки) = не фильтруем, показываем всё.
+  const visibleStages = stages.filter((s) => {
+    if (!hasLang(s.label, lang)) return false
+    if (!objection || rebuttalIndex.length === 0) return true
+    return rebuttalIndex.some(
+      (e) =>
+        e.objectionId === objection.id &&
+        e.stageId === s.id &&
+        e.langs.includes(lang),
+    )
+  })
+
   const stage = visibleStages.find((s) => s.id === stageId)
   const step: 1 | 2 | 3 = !objection ? 1 : !stage ? 2 : 3
 

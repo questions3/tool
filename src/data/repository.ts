@@ -137,6 +137,33 @@ export async function reorderSwap(
   if (error) throw error
 }
 
+/** Пара «возражение × этап», для которой есть опубликованный скрипт. */
+export interface RebuttalIndexEntry {
+  objectionId: string
+  stageId: string
+  /** Языки, на которых ответ реально заполнен. */
+  langs: string[]
+}
+
+/**
+ * Лёгкий индекс существующих скриптов (без текстов) — чтобы на шаге «Этап»
+ * показывать агенту только те этапы, где ответ действительно есть.
+ */
+export async function fetchRebuttalIndex(): Promise<RebuttalIndexEntry[]> {
+  const { data, error } = await db().rpc('rebuttal_index')
+  if (error) throw error
+  const rows = (data ?? []) as {
+    objection_id: string
+    stage_id: string
+    langs: string[] | null
+  }[]
+  return rows.map((r) => ({
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    langs: r.langs ?? [],
+  }))
+}
+
 export async function fetchRebuttal(
   objectionId: string,
   stageId: string,
