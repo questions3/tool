@@ -6,7 +6,9 @@ import {
   fetchLanguages,
   fetchObjections,
   fetchRebuttal,
+  fetchRebuttalIndex,
   fetchStages,
+  type RebuttalIndexEntry,
 } from '../data/repository'
 import {
   fallbackLanguages,
@@ -33,6 +35,11 @@ export interface ContentState {
   stages: Stage[]
   /** Загрузить скрипт под пару (возражение × этап). */
   loadRebuttal: (objectionId: string, stageId: string) => Promise<Rebuttal | null>
+  /**
+   * Индекс существующих скриптов (без текстов). Пустой массив = индекс
+   * недоступен (фолбэк/ошибка) — в этом случае этапы не фильтруются.
+   */
+  rebuttalIndex: RebuttalIndexEntry[]
   /** true — данные взяты из статического content.ts (Supabase не настроен). */
   usingFallback: boolean
 }
@@ -58,6 +65,7 @@ export function useContent(authed: boolean): ContentState {
   const [stages, setStages] = useState<Stage[]>(
     usingFallback ? enabled(staticStages) : [],
   )
+  const [rebuttalIndex, setRebuttalIndex] = useState<RebuttalIndexEntry[]>([])
   // Тик ручного/фонового перезапроса (фокус вкладки). 0 — первичная загрузка.
   const [reloadTick, setReloadTick] = useState(0)
   const lastFetch = useRef(0)
@@ -78,12 +86,21 @@ export function useContent(authed: boolean): ContentState {
       setError(null)
     }
     lastFetch.current = Date.now()
-    withTimeout(Promise.all([fetchLanguages(), fetchObjections(), fetchStages()]))
-      .then(([langs, objs, stgs]) => {
+    withTimeout(
+      Promise.all([
+        fetchLanguages(),
+        fetchObjections(),
+        fetchStages(),
+        // Индекс не критичен: если он не загрузится, этапы просто не фильтруются.
+        fetchRebuttalIndex().catch(() => [] as RebuttalIndexEntry[]),
+      ]),
+    )
+      .then(([langs, objs, stgs, index]) => {
         if (cancelled) return
         setLanguages(enabled(langs))
         setObjections(enabled(objs))
         setStages(enabled(stgs))
+        setRebuttalIndex(index)
         setError(null)
       })
       .catch((e) => {
@@ -132,6 +149,7 @@ export function useContent(authed: boolean): ContentState {
     objections,
     stages,
     loadRebuttal,
+    rebuttalIndex,
     usingFallback,
   }
 }
