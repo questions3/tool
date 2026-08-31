@@ -1,11 +1,9 @@
-import { unzipSync, strFromU8 } from 'fflate'
-
 /**
  * Разбор .docx и .xlsx прямо в браузере.
  *
- * Оба формата — обычные zip-архивы с XML внутри, поэтому хватает fflate
- * (~8 КБ) и штатного DOMParser: тяжёлые библиотеки вроде mammoth/SheetJS
- * не нужны, и в бандл не тянется лишнее.
+ * Оба формата — обычные zip-архивы с XML внутри. Распаковка сделана на
+ * штатных DecompressionStream и DOMParser, поэтому в проект не добавлено
+ * ни одной зависимости: ни mammoth/SheetJS, ни даже zip-библиотеки.
  *
  * Ожидаемая структура файла (та же, в которой заказчик присылает скрипты):
  *   Название возражения
@@ -43,17 +41,18 @@ interface Para {
 export async function parseFile(file: File): Promise<ParsedDoc> {
   const name = file.name.toLowerCase()
   const buf = new Uint8Array(await file.arrayBuffer())
+  const zip = await readZip(buf)
 
-  if (name.endsWith('.docx')) return parseDocx(buf)
-  if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) return parseXlsx(buf)
+  if (name.endsWith('.docx')) return parseDocx(zip)
+  if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) return parseXlsx(zip)
 
   throw new Error('Поддерживаются только файлы .docx и .xlsx')
 }
 
 // ---------------------------------------------------------------- docx
 
-function parseDocx(buf: Uint8Array): ParsedDoc {
-  const xml = readEntry(buf, 'word/document.xml')
+function parseDocx(zip: Zip): ParsedDoc {
+  const xml = zip['word/document.xml'] ?? null
   if (!xml) throw new Error('Это не похоже на документ Word: нет word/document.xml')
 
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
@@ -95,13 +94,12 @@ function splitGluedLabel(raw: string): string | null {
 
 // ---------------------------------------------------------------- xlsx
 
-function parseXlsx(buf: Uint8Array): ParsedDoc {
+function parseXlsx(zip: Zip): ParsedDoc {
   const sheet =
-    readEntry(buf, 'xl/worksheets/sheet1.xml') ??
-    readEntry(buf, 'xl/worksheets/Sheet1.xml')
+    zip['xl/worksheets/sheet1.xml'] ?? zip['xl/worksheets/Sheet1.xml'] ?? null
   if (!sheet) throw new Error('Это не похоже на книгу Excel: нет листа')
 
-  const shared = readSharedStrings(buf)
+  const shared = readSharedStrings(zip)
   const doc = new DOMParser().parseFromString(sheet, 'application/xml')
 
   // Собираем колонки A и B построчно — в этом виде приходят таблицы скриптов.
@@ -138,8 +136,8 @@ function parseXlsx(buf: Uint8Array): ParsedDoc {
   return { title, items, source: 'xlsx' }
 }
 
-function readSharedStrings(buf: Uint8Array): string[] {
-  const xml = readEntry(buf, 'xl/sharedStrings.xml')
+function readSharedStrings(zip: Zip): string[] {
+  const xml = zip['xl/sharedStrings.xml']
   if (!xml) return []
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
   return Array.from(doc.getElementsByTagName('si')).map((si) =>
@@ -165,14 +163,80 @@ function cellValue(c: Element, shared: string[]): string {
 
 // ---------------------------------------------------------------- общее
 
-function readEntry(buf: Uint8Array, path: string): string | null {
-  try {
-    const files = unzipSync(buf, { filter: (f) => f.name === path })
-    const entry = files[path]
-    return entry ? strFromU8(entry) : null
-  } catch {
-    return null
+/** Распакованный архив: путь внутри zip → содержимое как текст. */
+type Zip = Record<string, string>
+
+/**
+ * Минимальный распаковщик zip.
+ *
+ * Читаем только то, что нужно для OOXML: идём по локальным заголовкам
+ * (сигнатура PK\x03\x04), берём имя и данные. Сжатые записи (метод 8,
+ * deflate) разворачиваем нативным DecompressionStream — отдельная
+ * zip-библиотека для этого не нужна.
+ */
+async function readZip(buf: Uint8Array): Promise<Zip> {
+  const out: Zip = {}
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
+  const decoder = new TextDecoder()
+  let i = 0
+
+  while (i + 30 <= buf.length) {
+    if (view.getUint32(i, true) !== 0x04034b50) break // не локальный заголовок
+
+    const method = view.getUint16(i + 8, true)
+    let compressed = view.getUint32(i + 18, true)
+    const nameLen = view.getUint16(i + 26, true)
+    const extraLen = view.getUint16(i + 28, true)
+    const nameStart = i + 30
+    const dataStart = nameStart + nameLen + extraLen
+    const name = decoder.decode(buf.subarray(nameStart, nameStart + nameLen))
+
+    // Размер в локальном заголовке может быть нулевым (данные идут с
+    // data descriptor). Тогда ищем следующую сигнатуру записи.
+    if (compressed === 0) {
+      const next = findNextSignature(buf, dataStart)
+      compressed = Math.max(0, next - dataStart)
+    }
+
+    const raw = buf.subarray(dataStart, dataStart + compressed)
+    // XML нужен не весь: пропускаем картинки, шрифты и прочий балласт.
+    if (name.endsWith('.xml')) {
+      try {
+        out[name] =
+          method === 0 ? decoder.decode(raw) : decoder.decode(await inflate(raw))
+      } catch {
+        // Повреждённая запись не должна ронять импорт целиком.
+      }
+    }
+
+    i = dataStart + compressed
+    // Пропускаем data descriptor, если он есть.
+    if (i + 4 <= buf.length && view.getUint32(i, true) === 0x08074b50) i += 16
   }
+
+  return out
+}
+
+/** Смещение следующей записи/центрального каталога, начиная с `from`. */
+function findNextSignature(buf: Uint8Array, from: number): number {
+  for (let j = from; j + 4 <= buf.length; j++) {
+    if (buf[j] !== 0x50 || buf[j + 1] !== 0x4b) continue
+    const c = buf[j + 2]
+    const d = buf[j + 3]
+    // PK\x03\x04 (запись), PK\x01\x02 (каталог), PK\x07\x08 (descriptor)
+    if ((c === 3 && d === 4) || (c === 1 && d === 2) || (c === 7 && d === 8)) {
+      return j
+    }
+  }
+  return buf.length
+}
+
+/** raw deflate → байты, нативным API браузера. */
+async function inflate(data: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([data as BlobPart])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate-raw'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
 }
 
 /** Убирает нумерацию списка, кавычки и лишние пробелы из заголовка. */
