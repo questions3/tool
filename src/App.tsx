@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Lang, Rebuttal, SectionId } from './types'
+import type { Lang, Localized, Rebuttal, SectionId } from './types'
 import { useAuth } from './hooks/useAuth'
 import { useContent } from './hooks/useContent'
 import { useFavorites } from './hooks/useFavorites'
-import { hasLang, pick, t, type UiKey } from './i18n/ui'
+import { useNote } from './hooks/useNote'
+import { useOutcome } from './hooks/useOutcome'
+import { useTags } from './hooks/useTags'
+import { hasLang, hasTranslated, pick, t, type UiKey } from './i18n/ui'
 import { fallbackLanguages } from './data/content'
-import { logScriptView } from './data/repository'
+import { logScriptView, type SearchHit } from './data/repository'
 import { withTimeout } from './lib/withTimeout'
 import { Login } from './components/Login'
 import { Header } from './components/Header'
 import { Stepper } from './components/Stepper'
 import { SelectScreen } from './components/SelectScreen'
 import { AnswerScreen } from './components/AnswerScreen'
+import { NotePanel } from './components/NotePanel'
+import { SearchOverlay } from './components/SearchOverlay'
+import { WhatsNew } from './components/WhatsNew'
 import { HomeScreen } from './components/HomeScreen'
 import { SectionScreen } from './components/SectionScreen'
 
@@ -43,6 +49,7 @@ export default function App() {
   const [view, setView] = useState<View>('home')
   const [objectionId, setObjectionId] = useState<string | null>(null)
   const [stageId, setStageId] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   // Список языков для переключателя (до загрузки из БД — фолбэк).
   const langOptions = languages.length ? languages : fallbackLanguages
@@ -64,6 +71,18 @@ export default function App() {
     setObjectionId(null)
     setStageId(null)
   }, [lang])
+
+  // Ctrl/Cmd+K — общий поиск из любого места приложения.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Восстанавливаем сессию из хранилища — не мигаем экраном входа.
   if (authLoading) {
@@ -96,6 +115,19 @@ export default function App() {
     setView('home')
   }
 
+  /** Переход по результату поиска: открываем ровно тот экран, где он лежит. */
+  function goToHit(hit: SearchHit) {
+    setSearchOpen(false)
+    if (hit.kind === 'entry' && hit.section) {
+      setView(hit.section)
+      return
+    }
+    if (!hit.objectionId) return
+    setObjectionId(hit.objectionId)
+    setStageId(hit.stageId)
+    setView('objections')
+  }
+
   function handleLogout() {
     goHome()
     void signOut()
@@ -110,11 +142,31 @@ export default function App() {
         onLangChange={setLang}
         onLogout={handleLogout}
         onHome={goHome}
+        onSearch={configured ? () => setSearchOpen(true) : undefined}
       />
+
+      {searchOpen && (
+        <SearchOverlay
+          lang={lang}
+          onClose={() => setSearchOpen(false)}
+          onGo={goToHit}
+        />
+      )}
 
       <main className="mx-auto max-w-3xl px-4 py-7 sm:px-6 sm:py-10">
         {view === 'home' && (
-          <HomeScreen lang={lang} onSelect={(choice) => setView(choice)} />
+          <>
+            <WhatsNew
+              lang={lang}
+              enabled={configured && !!session}
+              onGo={(o, st) => {
+                setObjectionId(o)
+                setStageId(st)
+                setView('objections')
+              }}
+            />
+            <HomeScreen lang={lang} onSelect={(choice) => setView(choice)} />
+          </>
         )}
 
         {view === 'objections' && (
@@ -170,14 +222,23 @@ function ObjectionsFlow({
 }) {
   const { objections, stages, rebuttalIndex } = content
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { tags, objectionsWithTag } = useTags()
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
   // Языковой фильтр: только переведённые на выбранный язык.
-  const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
+  const byLang = objections.filter((o) =>
+    hasTranslated(o.label, lang, o.draftLangs),
+  )
+
+  // Фильтр по тегу применяется только к списку на первом шаге: уже
+  // выбранное возражение из-за смены чипа исчезать не должно.
+  const tagged = activeTag ? objectionsWithTag(activeTag) : null
+  const visibleObjections = tagged ? byLang.filter((o) => tagged.has(o.id)) : byLang
 
   // Выбор и шаг считаем по ОТФИЛЬТРОВАННЫМ спискам: если активный выбор не
   // переведён на текущий язык, он просто «не существует» → шаг откатывается,
   // и мы не показываем чужой fallback-текст и не зависаем на пустом шаге 3.
-  const objection = visibleObjections.find((o) => o.id === objectionId)
+  const objection = byLang.find((o) => o.id === objectionId)
 
   // Этапы: язык + наличие скрипта под выбранное возражение. Без этого агент
   // видел бы все три этапа и в ~2 случаях из 3 упирался в «скрипт не найден».
@@ -195,6 +256,23 @@ function ObjectionsFlow({
 
   const stage = visibleStages.find((s) => s.id === stageId)
   const step: 1 | 2 | 3 = !objection ? 1 : !stage ? 2 : 3
+
+  // Esc — шаг назад. Вместе с цифрами 1–9 на карточках это даёт проход
+  // по всему сценарию, не снимая рук с клавиатуры во время звонка.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return
+      const el = e.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
+      if (step === 3) setStageId(null)
+      else if (step === 2) {
+        setObjectionId(null)
+        setStageId(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [step, setObjectionId, setStageId])
 
   return (
     <>
@@ -220,11 +298,11 @@ function ObjectionsFlow({
 
       {content.loading && <Notice>{t('loading', lang)}</Notice>}
       {content.error && <RetryNotice lang={lang} />}
-      {!content.loading && !content.error && visibleObjections.length === 0 && (
-        <Notice>{t('noEntries', lang)}</Notice>
-      )}
+      {!content.loading &&
+        !content.error &&
+        byLang.length === 0 && <Notice>{t('noEntries', lang)}</Notice>}
 
-      {!content.loading && !content.error && visibleObjections.length > 0 && (
+      {!content.loading && !content.error && byLang.length > 0 && (
         <>
           {step === 1 && (
             <SelectScreen
@@ -233,6 +311,16 @@ function ObjectionsFlow({
               title={t('step1Title', lang)}
               columns={2}
               searchable
+              filters={
+                tags.length > 0 ? (
+                  <TagChips
+                    lang={lang}
+                    tags={tags}
+                    active={activeTag}
+                    onChange={setActiveTag}
+                  />
+                ) : null
+              }
               isFavorite={isFavorite}
               onToggleFavorite={toggleFavorite}
               items={visibleObjections.map((o) => ({
@@ -278,6 +366,64 @@ function ObjectionsFlow({
         </>
       )}
     </>
+  )
+}
+
+/** Полоска тегов над списком возражений. */
+function TagChips({
+  lang,
+  tags,
+  active,
+  onChange,
+}: {
+  lang: Lang
+  tags: { id: string; label: Localized }[]
+  active: string | null
+  onChange: (id: string | null) => void
+}) {
+  // Тег без названия на текущем языке для оператора не существует.
+  const shown = tags.filter((t) => hasLang(t.label, lang))
+  if (shown.length === 0) return null
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      <Chip active={active === null} onClick={() => onChange(null)}>
+        {t('allTags', lang)}
+      </Chip>
+      {shown.map((tag) => (
+        <Chip
+          key={tag.id}
+          active={active === tag.id}
+          onClick={() => onChange(active === tag.id ? null : tag.id)}
+        >
+          {pick(tag.label, lang)}
+        </Chip>
+      ))}
+    </div>
+  )
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3 py-1 text-sm transition ${
+        active
+          ? 'border-accent bg-accent text-white'
+          : 'border-slate-200 bg-white text-slate-600 hover:border-accent hover:text-accent'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -339,6 +485,17 @@ function AnswerWrap({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  const note = useNote({ agentEmail, objectionId, stageId, enabled: trackViews })
+
+  // Отметка исхода разговора — тот же контекст, что и у статистики открытий.
+  const { picked, pick: markOutcome } = useOutcome({
+    objectionId,
+    stageId,
+    lang,
+    agentEmail,
+    enabled: trackViews,
+  })
+
   const key = useMemo(() => `${objectionId}:${stageId}`, [objectionId, stageId])
 
   // Статистика открытий: одна запись на пару «возражение × этап × язык».
@@ -370,7 +527,11 @@ function AnswerWrap({
   if (error) return <RetryNotice lang={lang} />
   // Черновики видны только в админке; агенту они «не существуют».
   // Языковой фильтр: ответ показываем только если он есть на выбранном языке.
-  if (!rebuttal || rebuttal.draft || !hasLang(rebuttal.answer, lang))
+  if (
+    !rebuttal ||
+    rebuttal.draft ||
+    !hasTranslated(rebuttal.answer, lang, rebuttal.draftLangs)
+  )
     return <Notice>{t('noScript', lang)}</Notice>
 
   return (
@@ -379,6 +540,20 @@ function AnswerWrap({
       objectionLabel={objectionLabel}
       stageLabel={stageLabel}
       rebuttal={rebuttal}
+      note={
+        note.available && note.loaded ? (
+          <NotePanel
+            lang={lang}
+            body={note.body}
+            saving={note.saving}
+            error={note.error}
+            onSave={note.save}
+          />
+        ) : null
+      }
+      outcome={picked}
+      // Без базы и без входа отметку писать некуда — прячем строку целиком.
+      onOutcome={trackViews ? markOutcome : undefined}
     />
   )
 }

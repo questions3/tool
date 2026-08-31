@@ -248,6 +248,173 @@ $$;
 revoke execute on function public.usage_summary(int) from public;
 grant execute on function public.usage_summary(int) to authenticated;
 
+-- ------------------------------------------------------------
+-- Исход разговора: чем закончился звонок после показанного скрипта.
+-- Отметка добровольная — принуждение дало бы мусорные данные.
+-- ------------------------------------------------------------
+create table if not exists public.script_outcomes (
+  id            uuid primary key default gen_random_uuid(),
+  objection_id  uuid references public.objections(id) on delete cascade,
+  stage_id      uuid references public.stages(id) on delete set null,
+  lang          text not null,
+  outcome       text not null check (outcome in ('success', 'callback', 'lost')),
+  agent_email   text,
+  created_at    timestamptz not null default now()
+);
+create index if not exists script_outcomes_created_at_idx on public.script_outcomes (created_at desc);
+create index if not exists script_outcomes_objection_idx on public.script_outcomes (objection_id);
+
+alter table public.script_outcomes enable row level security;
+
+create policy "insert script_outcomes" on public.script_outcomes
+  for insert to authenticated with check (public.can_read_content());
+create policy "admin reads script_outcomes" on public.script_outcomes
+  for select to authenticated using (public.is_admin());
+
+-- Журналы только дополняются. Политик на update/delete нет, поэтому RLS их
+-- закрывает, но TRUNCATE проверяется по табличным привилегиям и RLS обходит —
+-- лишние права у authenticated снимаем явно, иначе журнал можно стереть.
+revoke update, delete, truncate, references, trigger
+  on public.script_views, public.agent_logins, public.script_outcomes
+  from authenticated;
+revoke all on public.script_outcomes from anon;
+grant insert, select on public.script_outcomes to authenticated;
+
+-- Сводка эффективности: открытий, отметок и разбивка исходов по возражениям.
+-- Открытия и отметки считаются независимо, поэтому оба агрегата
+-- подшиваются к списку возражений слева.
+create or replace function public.outcome_summary(p_days int default 30)
+returns table (
+  objection_id uuid,
+  label        jsonb,
+  views        bigint,
+  marked       bigint,
+  success      bigint,
+  callback     bigint,
+  lost         bigint,
+  last_marked  timestamptz
+)
+language sql stable security invoker set search_path = public as $$
+  with period as (
+    select now() - make_interval(days => greatest(p_days, 1)) as since
+  ),
+  v as (
+    select sv.objection_id, count(*) as views
+    from public.script_views sv, period p
+    where sv.viewed_at > p.since
+    group by sv.objection_id
+  ),
+  m as (
+    select so.objection_id,
+           count(*)                                       as marked,
+           count(*) filter (where so.outcome = 'success')  as success,
+           count(*) filter (where so.outcome = 'callback') as callback,
+           count(*) filter (where so.outcome = 'lost')     as lost,
+           max(so.created_at)                              as last_marked
+    from public.script_outcomes so, period p
+    where so.created_at > p.since
+    group by so.objection_id
+  )
+  select o.id,
+         o.label,
+         coalesce(v.views, 0),
+         coalesce(m.marked, 0),
+         coalesce(m.success, 0),
+         coalesce(m.callback, 0),
+         coalesce(m.lost, 0),
+         m.last_marked
+  from public.objections o
+  left join v on v.objection_id = o.id
+  left join m on m.objection_id = o.id
+  where coalesce(v.views, 0) > 0 or coalesce(m.marked, 0) > 0
+  order by coalesce(m.marked, 0) desc, coalesce(v.views, 0) desc;
+$$;
+revoke execute on function public.outcome_summary(int) from public;
+grant execute on function public.outcome_summary(int) to authenticated;
+
+-- ============================================================
+-- 6e. ТЕГИ, НОТАТКИ, ПОШУК, «ЩО НОВОГО», КОПІЯ МОВОЮ
+-- ============================================================
+
+-- Теги — поперечний розріз списку заперечень («ціна», «довіра»).
+-- Одне заперечення може бути в кількох темах, тому зв'язок багато-до-багатьох.
+create table if not exists public.tags (
+  id          uuid primary key default gen_random_uuid(),
+  slug        text not null unique,
+  label       jsonb not null default '{}'::jsonb,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create table if not exists public.objection_tags (
+  objection_id uuid not null references public.objections(id) on delete cascade,
+  tag_id       uuid not null references public.tags(id) on delete cascade,
+  primary key (objection_id, tag_id)
+);
+create index if not exists objection_tags_tag_idx on public.objection_tags (tag_id);
+
+alter table public.tags enable row level security;
+alter table public.objection_tags enable row level security;
+create policy "read tags" on public.tags for select using (public.can_read_content());
+create policy "admin writes tags" on public.tags
+  for all using (public.is_admin()) with check (public.is_admin());
+create policy "read objection_tags" on public.objection_tags
+  for select using (public.can_read_content());
+create policy "admin writes objection_tags" on public.objection_tags
+  for all using (public.is_admin()) with check (public.is_admin());
+revoke all on public.tags, public.objection_tags from anon;
+grant select, insert, update, delete on public.tags to authenticated;
+grant select, insert, update, delete on public.objection_tags to authenticated;
+
+-- Особисті нотатки оператора. Ключ — email, бо за ним працює білий список.
+-- Якщо оператора прибрали, нотатки лишаються й доступні адміну: мовчки
+-- видаляти чужу роботу не можна, а сам оператор доступ уже втратив.
+create table if not exists public.agent_notes (
+  id           uuid primary key default gen_random_uuid(),
+  agent_email  text not null,
+  objection_id uuid not null references public.objections(id) on delete cascade,
+  stage_id     uuid not null references public.stages(id) on delete cascade,
+  body         text not null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (agent_email, objection_id, stage_id)
+);
+create index if not exists agent_notes_email_idx on public.agent_notes (lower(agent_email));
+alter table public.agent_notes enable row level security;
+
+-- Свій email із токена; порівнюємо без урахування регістру.
+create or replace function public.current_email()
+returns text language sql stable security definer set search_path = public as $$
+  select lower(coalesce(auth.jwt() ->> 'email', ''));
+$$;
+revoke execute on function public.current_email() from public;
+grant execute on function public.current_email() to authenticated;
+
+create policy "read own notes" on public.agent_notes for select to authenticated
+  using (public.is_admin() or lower(agent_email) = public.current_email());
+create policy "write own notes" on public.agent_notes for insert to authenticated
+  with check (public.can_read_content()
+              and lower(agent_email) = public.current_email()
+              and public.current_email() <> '');
+create policy "update own notes" on public.agent_notes for update to authenticated
+  using (lower(agent_email) = public.current_email() and public.current_email() <> '')
+  with check (lower(agent_email) = public.current_email());
+create policy "delete own notes" on public.agent_notes for delete to authenticated
+  using (lower(agent_email) = public.current_email() and public.current_email() <> '');
+revoke all on public.agent_notes from anon;
+grant select, insert, update, delete on public.agent_notes to authenticated;
+
+-- Мови, текст яких скопійований з іншої мови й ще не перекладений.
+-- Оператору такі мови не показуємо: інакше він прочитає клієнту текст
+-- чужою мовою замість «скрипта немає».
+alter table public.objections add column if not exists draft_langs text[] not null default '{}';
+alter table public.rebuttals  add column if not exists draft_langs text[] not null default '{}';
+
+-- Функції пошуку, стрічки змін і копії мовою — див. міграції
+-- search_recent_and_clone: public.snippet(), public.search_content(),
+-- public.recent_changes(), public.clone_objection().
+-- Усі три SECURITY INVOKER, тож доступ обмежують ті самі політики.
+
 -- ============================================================
 -- 6c. АТОМАРНЫЙ РЕОРДЕР (стрелки ▲/▼ в админке)
 -- Меняет местами sort_order двух строк в одной транзакции, чтобы

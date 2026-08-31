@@ -4,6 +4,7 @@ import type {
   Language,
   Localized,
   Objection,
+  Outcome,
   Rebuttal,
   SectionId,
   Stage,
@@ -162,6 +163,28 @@ export async function logAgentLogin(email: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Записать исход разговора. Таблица только на добавление: правки и удаления
+ * запрещены и RLS, и привилегиями, чтобы статистику нельзя было подкрутить
+ * задним числом. Как и остальная телеметрия, пишется «в фоне».
+ */
+export async function logOutcome(input: {
+  objectionId: string
+  stageId: string
+  lang: string
+  outcome: Outcome
+  agentEmail?: string | null
+}): Promise<void> {
+  const { error } = await db().from('script_outcomes').insert({
+    objection_id: input.objectionId,
+    stage_id: input.stageId,
+    lang: input.lang,
+    outcome: input.outcome,
+    agent_email: input.agentEmail ?? null,
+  })
+  if (error) throw error
+}
+
 /** Строка сводки использования для админки. */
 export interface UsageRow {
   objectionId: string
@@ -188,6 +211,51 @@ export async function fetchUsageSummary(days = 30): Promise<UsageRow[]> {
   }))
 }
 
+/** Строка сводки эффективности: открытия против отмеченных исходов. */
+export interface OutcomeRow {
+  objectionId: string
+  label: Localized
+  /** Сколько раз скрипт открывали за период. */
+  views: number
+  /** Сколько раз оператор отметил исход. */
+  marked: number
+  success: number
+  callback: number
+  lost: number
+  lastMarked: string | null
+}
+
+/**
+ * Эффективность скриптов за последние `days` дней.
+ *
+ * Возвращает и открытия, и отметки: без первого числа доля успеха
+ * нечитаема — 100% на трёх отметках не значит ничего.
+ */
+export async function fetchOutcomeSummary(days = 30): Promise<OutcomeRow[]> {
+  const { data, error } = await db().rpc('outcome_summary', { p_days: days })
+  if (error) throw error
+  const rows = (data ?? []) as {
+    objection_id: string
+    label: Localized
+    views: number
+    marked: number
+    success: number
+    callback: number
+    lost: number
+    last_marked: string | null
+  }[]
+  return rows.map((r) => ({
+    objectionId: r.objection_id,
+    label: r.label ?? {},
+    views: Number(r.views),
+    marked: Number(r.marked),
+    success: Number(r.success),
+    callback: Number(r.callback),
+    lost: Number(r.lost),
+    lastMarked: r.last_marked,
+  }))
+}
+
 /** Запись журнала входов. */
 export interface LoginRow {
   id: string
@@ -206,6 +274,239 @@ export async function fetchAgentLogins(limit = 100): Promise<LoginRow[]> {
   return ((data ?? []) as { id: string; email: string; logged_at: string }[]).map(
     (r) => ({ id: r.id, email: r.email, loggedAt: r.logged_at }),
   )
+}
+
+/* ─────────────── Общий поиск ─────────────── */
+
+/** Что нашлось: возражение, скрипт, ветка или элемент раздела. */
+export type SearchKind = 'objection' | 'script' | 'branch' | 'entry'
+
+export interface SearchHit {
+  kind: SearchKind
+  objectionId: string | null
+  stageId: string | null
+  section: SectionId | null
+  title: string
+  /** Кусок текста вокруг совпадения. */
+  snippet: string
+}
+
+/**
+ * Сквозной поиск по возражениям, скриптам, веткам и разделам.
+ *
+ * Считается в базе: выгружать весь контент в браузер ради подстроки —
+ * и медленно, и лишний повод отдать наружу то, что оператору не положено.
+ */
+export async function searchContent(q: string, lang: string): Promise<SearchHit[]> {
+  const query = q.trim()
+  if (query.length < 2) return []
+  const { data, error } = await db().rpc('search_content', {
+    p_q: query,
+    p_lang: lang,
+  })
+  if (error) throw error
+  return ((data ?? []) as {
+    kind: SearchKind
+    objection_id: string | null
+    stage_id: string | null
+    section: SectionId | null
+    title: string
+    snippet: string
+  }[]).map((r) => ({
+    kind: r.kind,
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    section: r.section,
+    title: r.title,
+    snippet: r.snippet,
+  }))
+}
+
+/* ─────────────── Что нового ─────────────── */
+
+export interface ChangeRow {
+  kind: 'objection' | 'script'
+  objectionId: string
+  stageId: string | null
+  title: string
+  changedAt: string
+  /** Появилось впервые, а не переписано. */
+  isNew: boolean
+}
+
+/** Что изменилось с момента последнего визита оператора. */
+export async function fetchRecentChanges(
+  since: string,
+  lang: string,
+): Promise<ChangeRow[]> {
+  const { data, error } = await db().rpc('recent_changes', {
+    p_since: since,
+    p_lang: lang,
+  })
+  if (error) throw error
+  return ((data ?? []) as {
+    kind: 'objection' | 'script'
+    objection_id: string
+    stage_id: string | null
+    title: string
+    changed_at: string
+    is_new: boolean
+  }[]).map((r) => ({
+    kind: r.kind,
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    title: r.title,
+    changedAt: r.changed_at,
+    isNew: r.is_new,
+  }))
+}
+
+/* ─────────────── Личные заметки ─────────────── */
+
+/** Заметка оператора к паре «возражение × этап». Видна только автору. */
+export async function fetchNote(
+  agentEmail: string,
+  objectionId: string,
+  stageId: string,
+): Promise<string> {
+  const { data, error } = await db()
+    .from('agent_notes')
+    .select('body')
+    .eq('agent_email', agentEmail.toLowerCase())
+    .eq('objection_id', objectionId)
+    .eq('stage_id', stageId)
+    .maybeSingle()
+  if (error) throw error
+  return (data as { body: string } | null)?.body ?? ''
+}
+
+/** Сохранить заметку; пустой текст удаляет её. */
+export async function saveNote(input: {
+  agentEmail: string
+  objectionId: string
+  stageId: string
+  body: string
+}): Promise<void> {
+  const email = input.agentEmail.toLowerCase()
+  const body = input.body.trim()
+  if (!body) {
+    const { error } = await db()
+      .from('agent_notes')
+      .delete()
+      .eq('agent_email', email)
+      .eq('objection_id', input.objectionId)
+      .eq('stage_id', input.stageId)
+    if (error) throw error
+    return
+  }
+  const { error } = await db().from('agent_notes').upsert(
+    {
+      agent_email: email,
+      objection_id: input.objectionId,
+      stage_id: input.stageId,
+      body,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'agent_email,objection_id,stage_id' },
+  )
+  if (error) throw error
+}
+
+/* ─────────────── Теги ─────────────── */
+
+export interface Tag {
+  id: string
+  slug: string
+  label: Localized
+  sortOrder: number
+}
+
+export async function fetchTags(): Promise<Tag[]> {
+  const { data, error } = await db().from('tags').select('*').order('sort_order')
+  if (error) throw error
+  return ((data ?? []) as {
+    id: string
+    slug: string
+    label: Localized
+    sort_order: number
+  }[]).map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    label: r.label ?? {},
+    sortOrder: r.sort_order,
+  }))
+}
+
+/** Связи «возражение ↔ тег». Отдаём плоским списком: их немного. */
+export async function fetchObjectionTags(): Promise<
+  { objectionId: string; tagId: string }[]
+> {
+  const { data, error } = await db().from('objection_tags').select('*')
+  if (error) throw error
+  return ((data ?? []) as { objection_id: string; tag_id: string }[]).map((r) => ({
+    objectionId: r.objection_id,
+    tagId: r.tag_id,
+  }))
+}
+
+export async function saveTag(tag: {
+  id?: string
+  slug: string
+  label: Localized
+  sortOrder: number
+}): Promise<void> {
+  const row = {
+    slug: tag.slug,
+    label: tag.label,
+    sort_order: tag.sortOrder,
+    updated_at: new Date().toISOString(),
+  }
+  const { error } = tag.id
+    ? await db().from('tags').update(row).eq('id', tag.id)
+    : await db().from('tags').insert(row)
+  if (error) throw error
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  const { error } = await db().from('tags').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** Заменить набор тегов возражения целиком. */
+export async function setObjectionTags(
+  objectionId: string,
+  tagIds: string[],
+): Promise<void> {
+  const del = await db()
+    .from('objection_tags')
+    .delete()
+    .eq('objection_id', objectionId)
+  if (del.error) throw del.error
+  if (tagIds.length === 0) return
+  const { error } = await db()
+    .from('objection_tags')
+    .insert(tagIds.map((tagId) => ({ objection_id: objectionId, tag_id: tagId })))
+  if (error) throw error
+}
+
+/* ─────────────── Копия на другой язык ─────────────── */
+
+/**
+ * Скопировать тексты возражения из одного языка в другой.
+ * Заполняет только пустые места и помечает язык как непереведённый,
+ * чтобы копия не ушла оператору вместо перевода.
+ */
+export async function cloneObjectionLang(
+  objectionId: string,
+  fromLang: string,
+  toLang: string,
+): Promise<void> {
+  const { error } = await db().rpc('clone_objection', {
+    p_objection_id: objectionId,
+    p_from_lang: fromLang,
+    p_to_lang: toLang,
+  })
+  if (error) throw error
 }
 
 /** Пара «возражение × этап», для которой есть опубликованный скрипт. */

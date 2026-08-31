@@ -49,6 +49,12 @@ export interface Rebuttal {
   branches: Branch[]
   /** Контент-заглушка до загрузки реальных скриптов. */
   draft?: boolean
+  /**
+   * Языки, текст которых скопирован с другого языка и ещё не переведён.
+   * Оператору такие языки не показываем — иначе он прочитает клиенту
+   * польский текст в английском интерфейсе.
+   */
+  draftLangs?: string[]
 }
 
 export interface Objection {
@@ -58,6 +64,8 @@ export interface Objection {
   label: Localized
   /** Короткая подпись-подсказка. */
   hint: Localized
+  /** Языки с непереведённой копией — см. Rebuttal.draftLangs. */
+  draftLangs?: string[]
   /** Метаданные для админки (из БД). */
   isEnabled?: boolean
   sortOrder?: number
@@ -86,3 +94,9 @@ export interface Entry {
   isEnabled?: boolean
   sortOrder?: number
 }
+
+/**
+ * Чем закончился разговор после показанного скрипта.
+ * Отмечает оператор одним нажатием; пропуск — допустимый вариант.
+ */
+export type Outcome = 'success' | 'callback' | 'lost'

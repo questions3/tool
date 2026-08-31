@@ -10,6 +10,7 @@ import { RebuttalsSection } from './sections/RebuttalsSection'
 import { AgentsSection } from './sections/AgentsSection'
 import { EntriesSection } from './sections/EntriesSection'
 import { AnalyticsSection } from './sections/AnalyticsSection'
+import { TagsSection } from './sections/TagsSection'
 import { ImportSection } from './sections/ImportSection'
 import { ConfirmProvider } from './components/Confirm'
 
@@ -21,6 +22,7 @@ type Tab =
   | 'presentation'
   | 'service'
   | 'market'
+  | 'tags'
   | 'agents'
   | 'analytics'
   | 'import'
@@ -33,6 +35,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'presentation', label: 'Презентации' },
   { id: 'service', label: 'Сервисы' },
   { id: 'market', label: 'Рынок' },
+  { id: 'tags', label: 'Теги' },
   { id: 'agents', label: 'Агенты' },
   { id: 'analytics', label: 'Аналитика' },
   { id: 'import', label: 'Импорт' },
@@ -41,6 +44,7 @@ const TABS: { id: Tab; label: string }[] = [
 /** Вкладки с локализованным контентом — для них показываем «Язык заполнения». */
 const CONTENT_TABS: Tab[] = [
   'import',
+  'tags',
   'objections',
   'stages',
   'rebuttals',
@@ -264,6 +268,13 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               <AgentsSection
                 agentEmails={data.agentEmails}
                 onChanged={data.reload}
+              />
+            )}
+            {tab === 'tags' && (
+              <TagsSection
+                lang={activeLang}
+                languages={data.languages}
+                objections={data.objections}
               />
             )}
             {tab === 'analytics' && <AnalyticsSection lang={activeLang} />}

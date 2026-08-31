@@ -8,9 +8,18 @@ interface Props {
   onLangChange: (lang: Lang) => void
   onLogout: () => void
   onHome: () => void
+  /** Не передан — кнопка поиска не показывается (нет базы). */
+  onSearch?: () => void
 }
 
-export function Header({ lang, languages, onLangChange, onLogout, onHome }: Props) {
+export function Header({
+  lang,
+  languages,
+  onLangChange,
+  onLogout,
+  onHome,
+  onSearch,
+}: Props) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
@@ -33,6 +42,16 @@ export function Header({ lang, languages, onLangChange, onLogout, onHome }: Prop
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {onSearch && (
+            <button
+              onClick={onSearch}
+              title={`${t('searchAll', lang)} (Ctrl+K)`}
+              aria-label={t('searchAll', lang)}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-500 transition hover:border-accent hover:text-accent"
+            >
+              <span aria-hidden>⌕</span>
+            </button>
+          )}
           <LangToggle lang={lang} languages={languages} onChange={onLangChange} />
           <button
             onClick={onLogout}

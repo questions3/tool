@@ -25,6 +25,7 @@ export interface ObjectionRow {
   hint: Localized
   is_enabled: boolean
   sort_order: number
+  draft_langs?: string[] | null
 }
 
 export interface StageRow {
@@ -52,6 +53,7 @@ export interface RebuttalRow {
   answer: Localized
   is_draft: boolean
   sort_order: number
+  draft_langs?: string[] | null
   /** Приходит при nested-select `*, branches(*)`. */
   branches?: BranchRow[]
 }
@@ -73,6 +75,7 @@ export function toObjection(r: ObjectionRow): Objection {
     slug: r.slug,
     label: r.label ?? {},
     hint: r.hint ?? {},
+    draftLangs: r.draft_langs ?? [],
     isEnabled: r.is_enabled,
     sortOrder: r.sort_order,
   }
@@ -130,5 +133,6 @@ export function toRebuttal(r: RebuttalRow): Rebuttal {
     answer: r.answer ?? {},
     branches,
     draft: r.is_draft,
+    draftLangs: r.draft_langs ?? [],
   }
 }

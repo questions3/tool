@@ -290,6 +290,190 @@ export const ui = {
     es: 'Plantilla provisional. Los guiones finales se insertarán aquí.',
   },
 
+  // Исход разговора — необязательная отметка под скриптом
+  outcomeAsk: {
+    ru: 'Чем закончился разговор?',
+    pl: 'Jak zakończyła się rozmowa?',
+    en: 'How did the call end?',
+    de: 'Wie endete das Gespräch?',
+    es: '¿Cómo terminó la llamada?',
+  },
+  outcomeSuccess: {
+    ru: 'Сработало',
+    pl: 'Zadziałało',
+    en: 'Worked',
+    de: 'Hat geklappt',
+    es: 'Funcionó',
+  },
+  outcomeCallback: {
+    ru: 'Перезвон',
+    pl: 'Oddzwonić',
+    en: 'Call back',
+    de: 'Rückruf',
+    es: 'Volver a llamar',
+  },
+  outcomeLost: {
+    ru: 'Не сработало',
+    pl: 'Nie zadziałało',
+    en: 'Did not work',
+    de: 'Hat nicht geklappt',
+    es: 'No funcionó',
+  },
+  outcomeSaved: {
+    ru: 'Отмечено',
+    pl: 'Zapisano',
+    en: 'Recorded',
+    de: 'Erfasst',
+    es: 'Registrado',
+  },
+  outcomeUndo: {
+    ru: 'Изменить',
+    pl: 'Zmień',
+    en: 'Change',
+    de: 'Ändern',
+    es: 'Cambiar',
+  },
+
+  // Личные заметки оператора
+  noteTitle: {
+    ru: 'Моя заметка',
+    pl: 'Moja notatka',
+    en: 'My note',
+    de: 'Meine Notiz',
+    es: 'Mi nota',
+  },
+  noteAdd: {
+    ru: 'Добавить заметку',
+    pl: 'Dodaj notatkę',
+    en: 'Add a note',
+    de: 'Notiz hinzufügen',
+    es: 'Añadir nota',
+  },
+  notePlaceholder: {
+    ru: 'Что сработало у вас в этом возражении',
+    pl: 'Co zadziałało u ciebie przy tej obiekcji',
+    en: 'What worked for you on this objection',
+    de: 'Was bei diesem Einwand funktioniert hat',
+    es: 'Qué te funcionó con esta objeción',
+  },
+  notePrivate: {
+    ru: 'Видно только вам',
+    pl: 'Widoczne tylko dla ciebie',
+    en: 'Visible only to you',
+    de: 'Nur für Sie sichtbar',
+    es: 'Solo visible para ti',
+  },
+  save: { ru: 'Сохранить', pl: 'Zapisz', en: 'Save', de: 'Speichern', es: 'Guardar' },
+  saved: { ru: 'Сохранено', pl: 'Zapisano', en: 'Saved', de: 'Gespeichert', es: 'Guardado' },
+  cancel: { ru: 'Отмена', pl: 'Anuluj', en: 'Cancel', de: 'Abbrechen', es: 'Cancelar' },
+  deleteNote: { ru: 'Удалить', pl: 'Usuń', en: 'Delete', de: 'Löschen', es: 'Eliminar' },
+
+  // Сквозной поиск
+  searchAll: {
+    ru: 'Поиск по всем скриптам',
+    pl: 'Szukaj we wszystkich skryptach',
+    en: 'Search all scripts',
+    de: 'Alle Skripte durchsuchen',
+    es: 'Buscar en todos los guiones',
+  },
+  searchHint: {
+    ru: 'Введите слово из скрипта — найдём везде',
+    pl: 'Wpisz słowo ze skryptu — znajdziemy wszędzie',
+    en: 'Type a word from a script — we search everywhere',
+    de: 'Wort aus einem Skript eingeben — wir suchen überall',
+    es: 'Escribe una palabra del guion — buscamos en todo',
+  },
+  searchEmpty: {
+    ru: 'Ничего не нашлось',
+    pl: 'Nic nie znaleziono',
+    en: 'Nothing found',
+    de: 'Nichts gefunden',
+    es: 'No se encontró nada',
+  },
+  searchKindObjection: {
+    ru: 'Возражение',
+    pl: 'Obiekcja',
+    en: 'Objection',
+    de: 'Einwand',
+    es: 'Objeción',
+  },
+  searchKindScript: {
+    ru: 'Скрипт',
+    pl: 'Skrypt',
+    en: 'Script',
+    de: 'Skript',
+    es: 'Guion',
+  },
+  searchKindBranch: {
+    ru: 'Ветка',
+    pl: 'Wariant',
+    en: 'Branch',
+    de: 'Variante',
+    es: 'Variante',
+  },
+  searchKindEntry: {
+    ru: 'Материал',
+    pl: 'Materiał',
+    en: 'Item',
+    de: 'Eintrag',
+    es: 'Material',
+  },
+
+  // Теги
+  allTags: {
+    ru: 'Все',
+    pl: 'Wszystkie',
+    en: 'All',
+    de: 'Alle',
+    es: 'Todas',
+  },
+
+  // Плашка «Что нового»
+  whatsNew: {
+    ru: 'Что нового',
+    pl: 'Co nowego',
+    en: "What's new",
+    de: 'Was ist neu',
+    es: 'Novedades',
+  },
+  whatsNewAdded: {
+    ru: 'новое',
+    pl: 'nowe',
+    en: 'new',
+    de: 'neu',
+    es: 'nuevo',
+  },
+  whatsNewUpdated: {
+    ru: 'обновлено',
+    pl: 'zaktualizowane',
+    en: 'updated',
+    de: 'aktualisiert',
+    es: 'actualizado',
+  },
+  dismiss: {
+    ru: 'Понятно',
+    pl: 'Jasne',
+    en: 'Got it',
+    de: 'Verstanden',
+    es: 'Entendido',
+  },
+
+  // Режим «в звонке» — горячие клавиши
+  hotkeys: {
+    ru: 'Горячие клавиши',
+    pl: 'Skróty klawiszowe',
+    en: 'Keyboard shortcuts',
+    de: 'Tastenkürzel',
+    es: 'Atajos de teclado',
+  },
+  hotkeysHint: {
+    ru: '1–9 — выбрать карточку · / — поиск · Esc — назад · ? — справка',
+    pl: '1–9 — wybór karty · / — szukaj · Esc — wstecz · ? — pomoc',
+    en: '1–9 pick a card · / search · Esc back · ? help',
+    de: '1–9 Karte wählen · / Suche · Esc zurück · ? Hilfe',
+    es: '1–9 elegir tarjeta · / buscar · Esc atrás · ? ayuda',
+  },
+
   // Loading / errors
   loading: {
     ru: 'Загрузка…',
@@ -403,4 +587,20 @@ export function pick(value: Localized | undefined, lang: Lang): string {
 export function hasLang(value: Localized | undefined, lang: Lang): boolean {
   const v = value?.[lang]
   return typeof v === 'string' && v.trim() !== ''
+}
+
+/**
+ * Есть ли готовый текст на языке с учётом непереведённых копий.
+ *
+ * Копия на другой язык заполняет поле текстом языка-источника, чтобы
+ * переводчику было что править. До перевода такой язык считается пустым:
+ * иначе оператор получит текст на чужом языке вместо «нет скрипта».
+ */
+export function hasTranslated(
+  value: Localized | undefined,
+  lang: Lang,
+  draftLangs?: string[],
+): boolean {
+  if (draftLangs?.includes(lang)) return false
+  return hasLang(value, lang)
 }

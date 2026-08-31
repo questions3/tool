@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   fetchAgentLogins,
+  fetchOutcomeSummary,
   fetchUsageSummary,
   type LoginRow,
+  type OutcomeRow,
   type UsageRow,
 } from '../../data/repository'
 import { pick } from '../../i18n/ui'
@@ -28,7 +30,9 @@ const PERIODS = [
 export function AnalyticsSection({ lang }: Props) {
   const [days, setDays] = useState(30)
   const [usage, setUsage] = useState<UsageRow[]>([])
+  const [outcomes, setOutcomes] = useState<OutcomeRow[]>([])
   const [logins, setLogins] = useState<LoginRow[]>([])
+  const [sortByProblem, setSortByProblem] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,11 +40,13 @@ export function AnalyticsSection({ lang }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const [u, l] = await Promise.all([
+      const [u, o, l] = await Promise.all([
         fetchUsageSummary(days),
+        fetchOutcomeSummary(days),
         fetchAgentLogins(50),
       ])
       setUsage(u)
+      setOutcomes(o)
       setLogins(l)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -133,6 +139,15 @@ export function AnalyticsSection({ lang }: Props) {
         )}
       </div>
 
+      <OutcomesBlock
+        rows={outcomes}
+        lang={lang}
+        loading={loading}
+        error={error}
+        sortByProblem={sortByProblem}
+        onSortChange={setSortByProblem}
+      />
+
       <div>
         <h2 className="mb-4 text-lg font-semibold text-slate-900">
           Последние входы операторов
@@ -166,6 +181,192 @@ export function AnalyticsSection({ lang }: Props) {
         )}
       </div>
     </section>
+  )
+}
+
+/**
+ * Эффективность скриптов: открытия против отмеченных исходов.
+ *
+ * Долю успеха нельзя читать в отрыве от числа отметок — отмечают
+ * добровольно и выборочно, поэтому рядом всегда стоит охват, а проценты
+ * на маленькой выборке помечаются как ненадёжные.
+ */
+function OutcomesBlock({
+  rows,
+  lang,
+  loading,
+  error,
+  sortByProblem,
+  onSortChange,
+}: {
+  rows: OutcomeRow[]
+  lang: string
+  loading: boolean
+  error: string | null
+  sortByProblem: boolean
+  onSortChange: (v: boolean) => void
+}) {
+  const marked = rows.filter((r) => r.marked > 0)
+  const totalViews = rows.reduce((sum, r) => sum + r.views, 0)
+  const totalMarked = rows.reduce((sum, r) => sum + r.marked, 0)
+  const totalSuccess = rows.reduce((sum, r) => sum + r.success, 0)
+  const coverage = totalViews ? Math.round((totalMarked / totalViews) * 100) : 0
+
+  // «По проблемным» — где чаще всего срывается: доля неудач по убыванию.
+  const sorted = [...marked].sort((a, b) =>
+    sortByProblem ? b.lost / b.marked - a.lost / a.marked : b.marked - a.marked,
+  )
+
+  if (loading || error) return null
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">
+          Эффективность скриптов
+        </h2>
+        {marked.length > 1 && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => onSortChange(false)}
+              className={`rounded-md px-2.5 py-1 text-sm transition ${
+                !sortByProblem
+                  ? 'bg-accent text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              По отметкам
+            </button>
+            <button
+              onClick={() => onSortChange(true)}
+              className={`rounded-md px-2.5 py-1 text-sm transition ${
+                sortByProblem
+                  ? 'bg-accent text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              По проблемным
+            </button>
+          </div>
+        )}
+      </div>
+
+      {marked.length === 0 && (
+        <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          Операторы ещё не отмечали исход разговора. Отметка появляется под
+          скриптом и ставится по желанию — цифры накопятся за пару недель.
+        </p>
+      )}
+
+      {marked.length > 0 && (
+        <>
+          <p className="mb-3 text-sm text-slate-500">
+            Отмечено <b className="text-slate-900">{totalMarked}</b> из{' '}
+            {totalViews} открытий ({coverage}%) · успешных{' '}
+            <b className="text-slate-900">
+              {Math.round((totalSuccess / totalMarked) * 100)}%
+            </b>
+          </p>
+          {coverage < 20 && (
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+              Размечена малая часть открытий — проценты ниже показывают
+              настроение отмечающих, а не всю картину. Выводы стоит делать,
+              когда охват дорастёт хотя бы до пятой части.
+            </p>
+          )}
+
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="w-full min-w-[34rem] text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                  <th className="px-4 py-2 font-medium">Возражение</th>
+                  <th className="px-4 py-2 text-right font-medium">Открытий</th>
+                  <th className="px-4 py-2 text-right font-medium">Отмечено</th>
+                  <th className="px-4 py-2 text-right font-medium">Успех</th>
+                  <th className="px-4 py-2 font-medium">Разбивка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((r) => {
+                  const share = Math.round((r.success / r.marked) * 100)
+                  // Меньше десяти отметок — цифра случайна, не выделяем её.
+                  const thin = r.marked < 10
+                  return (
+                    <tr key={r.objectionId} className="border-t border-slate-100">
+                      <td className="max-w-[18rem] truncate px-4 py-2 text-slate-900">
+                        {pick(r.label, lang) || Object.values(r.label)[0] || '—'}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                        {r.views}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                        {r.marked}
+                      </td>
+                      <td
+                        className={`px-4 py-2 text-right tabular-nums ${
+                          thin
+                            ? 'text-slate-400'
+                            : share >= 50
+                              ? 'font-semibold text-emerald-700'
+                              : 'font-semibold text-rose-700'
+                        }`}
+                        title={thin ? 'Мало отметок — цифра ненадёжна' : undefined}
+                      >
+                        {share}%{thin && '*'}
+                      </td>
+                      <td className="px-4 py-2">
+                        <Split row={r} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+            <span className="flex items-center gap-3">
+              <Dot cls="bg-emerald-500" text="сработало" />
+              <Dot cls="bg-amber-400" text="перезвон" />
+              <Dot cls="bg-rose-400" text="не сработало" />
+            </span>
+            {sorted.some((r) => r.marked < 10) && (
+              <span>* меньше десяти отметок — на такой выборке процент случаен.</span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Точка легенды к полоске разбивки. */
+function Dot({ cls, text }: { cls: string; text: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`h-1.5 w-1.5 rounded-full ${cls}`} />
+      {text}
+    </span>
+  )
+}
+
+/** Полоска «сработало / перезвон / не сработало» в пропорции. */
+function Split({ row }: { row: OutcomeRow }) {
+  const parts = [
+    { n: row.success, cls: 'bg-emerald-500', title: 'Сработало' },
+    { n: row.callback, cls: 'bg-amber-400', title: 'Перезвон' },
+    { n: row.lost, cls: 'bg-rose-400', title: 'Не сработало' },
+  ]
+  return (
+    <div className="flex h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
+      {parts.map((p) => (
+        <div
+          key={p.title}
+          className={p.cls}
+          title={`${p.title}: ${p.n}`}
+          style={{ width: `${(p.n / row.marked) * 100}%` }}
+        />
+      ))}
+    </div>
   )
 }
 

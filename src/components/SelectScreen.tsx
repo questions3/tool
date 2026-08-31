@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../types'
 import { t } from '../i18n/ui'
 
@@ -20,6 +20,8 @@ interface Props {
    * (возражения) — для трёх этапов поиск был бы шумом.
    */
   searchable?: boolean
+  /** Полоска фильтров под заголовком (чипы тегов). */
+  filters?: React.ReactNode
   /** Избранное: если не передано, звёздочки не показываются. */
   isFavorite?: (id: string) => boolean
   onToggleFavorite?: (id: string) => void
@@ -36,10 +38,12 @@ export function SelectScreen({
   onSelect,
   columns = 2,
   searchable = false,
+  filters,
   isFavorite,
   onToggleFavorite,
 }: Props) {
   const [query, setQuery] = useState('')
+  const searchInput = useRef<HTMLInputElement>(null)
 
   const grid =
     columns === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'
@@ -68,6 +72,37 @@ export function SelectScreen({
   const favCount = isFavorite ? shown.filter((i) => isFavorite(i.id)).length : 0
   const showFavGroup = favCount > 0 && favCount < shown.length
 
+  /*
+   * Режим «в звонке»: во время разговора руки заняты, тянуться к мыши
+   * некогда. Цифра открывает карточку по номеру, «/» ставит курсор в поиск.
+   * Внутри полей ввода цифры не перехватываем — там человек печатает.
+   */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null
+      const typing =
+        !!el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.isContentEditable)
+
+      if (e.key === '/' && !typing && searchInput.current) {
+        e.preventDefault()
+        searchInput.current.focus()
+        return
+      }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return
+
+      const n = Number(e.key)
+      if (Number.isInteger(n) && n >= 1 && n <= 9 && shown[n - 1]) {
+        e.preventDefault()
+        onSelect(shown[n - 1].id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [shown, onSelect])
+
   return (
     <div className="fade-in">
       <p className="text-xs font-semibold uppercase tracking-wider text-accent">
@@ -76,6 +111,8 @@ export function SelectScreen({
       <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         {title}
       </h1>
+
+      {filters}
 
       {showSearch && (
         <div className="relative mt-5">
@@ -86,6 +123,7 @@ export function SelectScreen({
             ⌕
           </span>
           <input
+            ref={searchInput}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -125,6 +163,7 @@ export function SelectScreen({
                 <Card
                   lang={lang}
                   item={item}
+                  hotkey={idx < 9 ? idx + 1 : undefined}
                   onSelect={onSelect}
                   starred={showStars ? isFavorite!(item.id) : undefined}
                   onToggleStar={
@@ -148,12 +187,15 @@ export function SelectScreen({
 function Card({
   lang,
   item,
+  hotkey,
   onSelect,
   starred,
   onToggleStar,
 }: {
   lang: Lang
   item: SelectItem
+  /** Номер для клавиш 1–9; на узких экранах не показываем. */
+  hotkey?: number
   onSelect: (id: string) => void
   starred?: boolean
   onToggleStar?: () => void
@@ -171,6 +213,14 @@ function Card({
       }}
       className="card card-hover group flex min-h-[88px] cursor-pointer items-start gap-3.5 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-accent focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30 sm:p-5"
     >
+      {hotkey && (
+        <span
+          aria-hidden
+          className="mt-0.5 hidden h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-200 font-mono text-[11px] text-slate-400 transition group-hover:border-accent group-hover:text-accent sm:flex"
+        >
+          {hotkey}
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-lg font-semibold leading-snug text-slate-900">
           {item.label}
