@@ -1,6 +1,8 @@
 import type { Lang, Language } from '../types'
 import { t } from '../i18n/ui'
 import { LangToggle } from './LangToggle'
+import { Logo } from './Logo'
+import { IconSearch } from './icons'
 
 interface Props {
   lang: Lang
@@ -21,24 +23,14 @@ export function Header({
   onSearch,
 }: Props) {
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+    <header className="sticky top-0 z-20 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <button
           onClick={onHome}
           title={t('appName', lang)}
-          className="flex items-center gap-2.5 rounded-lg text-left"
+          className="rounded-lg text-left"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-lg font-bold text-white">
-            C
-          </span>
-          <div className="leading-tight">
-            <div className="text-base font-semibold text-slate-900">
-              {t('appName', lang)}
-            </div>
-            <div className="hidden text-[11px] text-slate-500 sm:block">
-              {t('appTagline', lang)}
-            </div>
-          </div>
+          <Logo size={34} subtitle={t('appTagline', lang)} />
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -47,20 +39,22 @@ export function Header({
               onClick={onSearch}
               title={`${t('searchAll', lang)} (Ctrl+K)`}
               aria-label={t('searchAll', lang)}
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-500 transition hover:border-accent hover:text-accent"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-white text-ink-3 transition-colors duration-200 hover:border-accent-line hover:bg-accent-soft hover:text-accent"
             >
-              <span aria-hidden>⌕</span>
+              <IconSearch size={18} />
             </button>
           )}
           <LangToggle lang={lang} languages={languages} onChange={onLangChange} />
           <button
             onClick={onLogout}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink-2 transition-colors duration-200 hover:border-line-strong hover:bg-panel hover:text-ink"
           >
             {t('logout', lang)}
           </button>
         </div>
       </div>
+      {/* Единственное место, где перелив работает как декор — и то в пиксель. */}
+      <div aria-hidden className="brand-rule h-px w-full opacity-70" />
     </header>
   )
 }

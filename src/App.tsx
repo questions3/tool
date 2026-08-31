@@ -13,6 +13,7 @@ import { logScriptView, type SearchHit } from './data/repository'
 import { withTimeout } from './lib/withTimeout'
 import { Login } from './components/Login'
 import { Header } from './components/Header'
+import { LogoMark } from './components/Logo'
 import { Stepper } from './components/Stepper'
 import { SelectScreen } from './components/SelectScreen'
 import { AnswerScreen } from './components/AnswerScreen'
@@ -89,8 +90,9 @@ export default function App() {
   // Восстанавливаем сессию из хранилища — не мигаем экраном входа.
   if (authLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-500">
-        {t('loading', lang)}
+      <div className="flex min-h-dvh items-center justify-center">
+        <LogoMark size={44} className="animate-pulse" />
+        <span className="sr-only">{t('loading', lang)}</span>
       </div>
     )
   }
@@ -298,7 +300,7 @@ function ObjectionsFlow({
         ]}
       />
 
-      {content.loading && <Notice>{t('loading', lang)}</Notice>}
+      {content.loading && <CardsSkeleton />}
       {content.error && <RetryNotice lang={lang} />}
       {!content.loading &&
         !content.error &&
@@ -309,7 +311,6 @@ function ObjectionsFlow({
           {step === 1 && (
             <SelectScreen
               lang={lang}
-              stepLabel={`${t('step', lang)} 1`}
               title={t('step1Title', lang)}
               columns={2}
               searchable
@@ -341,7 +342,6 @@ function ObjectionsFlow({
           {step === 2 && visibleStages.length > 0 && (
             <SelectScreen
               lang={lang}
-              stepLabel={`${t('step', lang)} 2`}
               title={t('step2Title', lang)}
               columns={3}
               items={visibleStages.map((s) => ({
@@ -421,11 +421,46 @@ function Chip({
       className={`rounded-full border px-3 py-1 text-sm transition ${
         active
           ? 'border-accent bg-accent text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:border-accent hover:text-accent'
+          : 'border-line bg-white text-ink-2 hover:border-accent hover:text-accent'
       }`}
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Скелетоны загрузки.
+ *
+ * Спиннер посреди пустого экрана не говорит, что появится; полоски в
+ * форме будущих карточек говорят, и переход к контенту не дёргает
+ * раскладку.
+ */
+function CardsSkeleton() {
+  return (
+    <div aria-hidden className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="min-h-[88px] rounded-2xl border border-line bg-white p-4 sm:p-5"
+        >
+          <div className="skeleton h-4 w-3/5" />
+          <div className="skeleton mt-2.5 h-3 w-2/5" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function AnswerSkeleton() {
+  return (
+    <div aria-hidden>
+      <div className="skeleton h-8 w-3/4" />
+      <div className="skeleton mt-6 h-3 w-24" />
+      <div className="skeleton mt-3 h-28 w-full rounded-xl" />
+      <div className="skeleton mt-8 h-3 w-32" />
+      <div className="skeleton mt-3 h-20 w-full rounded-xl" />
+    </div>
   )
 }
 
@@ -438,10 +473,10 @@ function Notice({
 }) {
   return (
     <p
-      className={`rounded-lg border px-4 py-6 text-center text-sm ${
+      className={`rounded-xl border px-4 py-10 text-center text-sm ${
         tone === 'error'
           ? 'border-red-200 bg-red-50 text-red-600'
-          : 'border-slate-200 bg-white text-slate-500'
+          : 'border-dashed border-line-strong bg-white text-ink-3'
       }`}
     >
       {children}
@@ -532,7 +567,7 @@ function AnswerWrap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, loadRebuttal])
 
-  if (loading) return <Notice>{t('loading', lang)}</Notice>
+  if (loading) return <AnswerSkeleton />
   if (error) return <RetryNotice lang={lang} />
   // Черновики видны только в админке; агенту они «не существуют».
   // Языковой фильтр: ответ показываем только если он есть на выбранном языке.

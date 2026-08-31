@@ -75,8 +75,8 @@ export function FreshnessSection({ lang }: Props) {
       )}
 
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">Актуальность</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-ink">Актуальность</h2>
+        <p className="mt-1 text-sm text-ink-3">
           Скрипты устаревают вместе с условиями и тарифами, причём молча.
           Кнопка «Проверено» отмечает, что текст сверили с тем, как всё
           устроено сейчас. Просроченной проверка считается через {STALE_DAYS}{' '}
@@ -85,25 +85,25 @@ export function FreshnessSection({ lang }: Props) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
-          Требуют внимания: <b className="text-slate-900">{problems}</b> из{' '}
+        <p className="text-sm text-ink-3">
+          Требуют внимания: <b className="text-ink">{problems}</b> из{' '}
           {rows.length}
         </p>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-ink-2">
           <input
             type="checkbox"
             checked={onlyProblems}
             onChange={(e) => setOnlyProblems(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
+            className="h-4 w-4 rounded border-line-strong"
           />
           Только требующие внимания
         </label>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
+      {loading && <p className="text-sm text-ink-3">Загрузка…</p>}
 
       {!loading && shown.length === 0 && (
-        <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
           {rows.length === 0
             ? 'Опубликованных скриптов нет.'
             : 'Все скрипты проверены и с тех пор не менялись.'}
@@ -111,10 +111,10 @@ export function FreshnessSection({ lang }: Props) {
       )}
 
       {shown.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div className="overflow-x-auto rounded-lg border border-line">
           <table className="w-full min-w-[38rem] text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+              <tr className="bg-canvas text-left text-xs uppercase tracking-wider text-ink-3">
                 <th className="px-4 py-2 font-medium">Возражение</th>
                 <th className="px-4 py-2 font-medium">Этап</th>
                 <th className="px-4 py-2 font-medium">Языки</th>
@@ -124,16 +124,16 @@ export function FreshnessSection({ lang }: Props) {
             </thead>
             <tbody>
               {shown.map((r) => (
-                <tr key={r.rebuttalId} className="border-t border-slate-100">
-                  <td className="max-w-[15rem] truncate px-4 py-2 text-slate-900">
+                <tr key={r.rebuttalId} className="border-t border-line">
+                  <td className="max-w-[15rem] truncate px-4 py-2 text-ink">
                     {pick(r.label, lang) || Object.values(r.label)[0] || '—'}
                   </td>
-                  <td className="px-4 py-2 text-slate-500">
+                  <td className="px-4 py-2 text-ink-3">
                     {pick(r.stageLabel, lang) ||
                       Object.values(r.stageLabel)[0] ||
                       '—'}
                   </td>
-                  <td className="px-4 py-2 text-xs uppercase text-slate-400">
+                  <td className="px-4 py-2 text-xs uppercase text-ink-3">
                     {r.langs.join(' · ') || '—'}
                   </td>
                   <td className="px-4 py-2">
@@ -143,7 +143,7 @@ export function FreshnessSection({ lang }: Props) {
                     <button
                       onClick={() => void review(r.rebuttalId)}
                       disabled={busy === r.rebuttalId}
-                      className="whitespace-nowrap rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 transition hover:border-accent hover:text-accent disabled:opacity-50"
+                      className="whitespace-nowrap rounded-md border border-line px-2.5 py-1 text-sm text-ink-2 transition hover:border-accent hover:text-accent disabled:opacity-50"
                     >
                       {busy === r.rebuttalId ? '…' : 'Проверено'}
                     </button>
@@ -167,7 +167,7 @@ function Status({ row }: { row: StaleRow }) {
     return (
       <span className="text-amber-700">
         изменён после проверки
-        <span className="ml-1 text-xs text-slate-400">
+        <span className="ml-1 text-xs text-ink-3">
           {formatDate(row.updatedAt)}
         </span>
       </span>
@@ -175,15 +175,15 @@ function Status({ row }: { row: StaleRow }) {
   }
   const late = row.daysSince !== null && row.daysSince >= STALE_DAYS
   return (
-    <span className={late ? 'text-rose-700' : 'text-slate-500'}>
+    <span className={late ? 'text-rose-700' : 'text-ink-3'}>
       {formatDate(row.reviewedAt)}
       {row.daysSince !== null && (
-        <span className="ml-1 text-xs text-slate-400">
+        <span className="ml-1 text-xs text-ink-3">
           {row.daysSince} дн. назад
         </span>
       )}
       {row.reviewedBy && (
-        <span className="ml-1 text-xs text-slate-400">· {row.reviewedBy}</span>
+        <span className="ml-1 text-xs text-ink-3">· {row.reviewedBy}</span>
       )}
     </span>
   )

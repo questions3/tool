@@ -51,7 +51,7 @@ export function WhatsNew({ lang, enabled, onGo }: Props) {
         </span>
         <button
           onClick={dismiss}
-          className="rounded text-xs text-slate-500 underline underline-offset-2 transition hover:text-slate-800"
+          className="rounded text-xs text-ink-3 underline underline-offset-2 transition hover:text-ink"
         >
           {t('dismiss', lang)}
         </button>
@@ -61,10 +61,10 @@ export function WhatsNew({ lang, enabled, onGo }: Props) {
           <li key={i}>
             <button
               onClick={() => onGo(r.objectionId, r.stageId)}
-              className="flex flex-wrap items-baseline gap-2 text-left text-sm text-slate-800 underline-offset-2 hover:underline"
+              className="flex flex-wrap items-baseline gap-2 text-left text-sm text-ink underline-offset-2 hover:underline"
             >
               <span className="font-medium">{r.title}</span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-ink-3">
                 {r.isNew ? t('whatsNewAdded', lang) : t('whatsNewUpdated', lang)}
               </span>
             </button>
@@ -72,7 +72,7 @@ export function WhatsNew({ lang, enabled, onGo }: Props) {
         ))}
       </ul>
       {rows.length > 5 && (
-        <p className="mt-1.5 text-xs text-slate-500">+{rows.length - 5}</p>
+        <p className="mt-1.5 text-xs text-ink-3">+{rows.length - 5}</p>
       )}
     </div>
   )

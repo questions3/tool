@@ -1,5 +1,6 @@
 import type { Lang, Outcome, Rebuttal } from '../types'
 import { hasLang, pick, t } from '../i18n/ui'
+import { IconCheck, IconClock, IconSlash, IconTarget } from './icons'
 
 interface Props {
   lang: Lang
@@ -36,22 +37,24 @@ export function AnswerScreen({
   const branches = rebuttal.branches.filter((b) => hasLang(b.response, lang))
   return (
     <div className="fade-in">
-      <p className="text-xs font-semibold uppercase tracking-wider text-accent">
-        {t('step3Title', lang)}
-      </p>
-      <h1 className="mt-1.5 flex flex-wrap items-center gap-x-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <h1 className="flex flex-wrap items-baseline gap-x-2.5 text-[1.75rem] font-bold leading-tight tracking-tight text-ink sm:text-[2rem]">
         {objectionLabel}
-        <span aria-hidden className="text-slate-300">
-          /
+        <span className="text-[1.0625rem] font-medium text-ink-3">
+          {stageLabel}
         </span>
-        <span className="text-slate-400">{stageLabel}</span>
       </h1>
 
       {rebuttal.draft && (
-        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-          <span aria-hidden className="mt-0.5 text-amber-500">
-            ⚠
-          </span>
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <svg
+            aria-hidden
+            width="18" height="18" viewBox="0 0 20 20" fill="none"
+            stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
+            className="mt-0.5 shrink-0 text-amber-600"
+          >
+            <path d="M10 3.5 17 16H3l7-12.5Z" strokeLinejoin="round" />
+            <path d="M10 8.5v3.2M10 14.2h.01" />
+          </svg>
           <div>
             <div className="font-semibold text-amber-800">
               {t('draftBadge', lang)}
@@ -75,13 +78,18 @@ export function AnswerScreen({
             {branches.map((b, i) => (
               <div
                 key={i}
-                className="card rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+                className="card rounded-2xl border border-line bg-white p-4 sm:p-5"
               >
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                  {pick(b.label, lang)} · {t('condition', lang)}
-                </div>
-                <div className="mt-1 text-base font-semibold leading-snug text-slate-900">
-                  {pick(b.condition, lang)}
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-semibold leading-snug text-ink">
+                    <span className="font-normal text-ink-3">
+                      {t('condition', lang)}{' '}
+                    </span>
+                    {pick(b.condition, lang)}
+                  </h3>
+                  <span className="mt-0.5 shrink-0 rounded-md bg-panel px-2 py-0.5 text-[11px] font-medium text-ink-3">
+                    {pick(b.label, lang)}
+                  </span>
                 </div>
                 <div className="mt-3">
                   <ScriptCard text={pick(b.response, lang)} />
@@ -119,24 +127,22 @@ function OutcomeBar({
   onPick: (outcome: Outcome | null) => void
 }) {
   const options = [
-    { key: 'success', label: t('outcomeSuccess', lang), tone: 'emerald' },
-    { key: 'callback', label: t('outcomeCallback', lang), tone: 'amber' },
-    { key: 'lost', label: t('outcomeLost', lang), tone: 'rose' },
+    { key: 'success', label: t('outcomeSuccess', lang), tone: 'emerald', Icon: IconTarget },
+    { key: 'callback', label: t('outcomeCallback', lang), tone: 'amber', Icon: IconClock },
+    { key: 'lost', label: t('outcomeLost', lang), tone: 'rose', Icon: IconSlash },
   ] as const
 
   if (outcome) {
     const chosen = options.find((o) => o.key === outcome)
     return (
-      <div className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-200 pt-4 text-sm">
-        <span className="font-medium text-slate-900">
-          <span aria-hidden className="text-emerald-600">
-            ✓
-          </span>{' '}
+      <div className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-4 text-sm">
+        <span className="flex items-center gap-1.5 font-medium text-ink">
+          <IconCheck size={16} className="text-emerald-600" />
           {t('outcomeSaved', lang)}: {chosen?.label}
         </span>
         <button
           onClick={() => onPick(null)}
-          className="rounded text-slate-400 underline underline-offset-2 transition hover:text-slate-600"
+          className="rounded text-ink-3 underline underline-offset-2 transition-colors duration-200 hover:text-ink"
         >
           {t('outcomeUndo', lang)}
         </button>
@@ -145,15 +151,16 @@ function OutcomeBar({
   }
 
   return (
-    <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-200 pt-4">
-      <span className="text-sm text-slate-400">{t('outcomeAsk', lang)}</span>
+    <div className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+      <span className="text-sm text-ink-3">{t('outcomeAsk', lang)}</span>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <button
             key={o.key}
             onClick={() => onPick(o.key)}
-            className={`rounded-full border px-3 py-1 text-sm transition ${TONES[o.tone]}`}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-200 ${TONES[o.tone]}`}
           >
+            <o.Icon size={15} />
             {o.label}
           </button>
         ))}
@@ -165,15 +172,15 @@ function OutcomeBar({
 // Классы вынесены целиком: Tailwind не видит имена, собранные из кусков.
 const TONES = {
   emerald:
-    'border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
+    'border-line text-ink-2 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
   amber:
-    'border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700',
-  rose: 'border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700',
+    'border-line text-ink-2 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700',
+  rose: 'border-line text-ink-2 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700',
 } as const
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
       {children}
     </h2>
   )
@@ -189,7 +196,7 @@ function ScriptCard({
   // Базовый ответ — крупная выделенная карточка.
   if (prominent) {
     return (
-      <div className="mt-3 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+      <div className="mt-3 whitespace-pre-line rounded-xl border border-accent-line bg-accent-soft p-5 text-[1.0625rem] leading-[1.65] text-ink">
         {text}
       </div>
     )
@@ -197,7 +204,7 @@ function ScriptCard({
 
   // Ответ ветки.
   return (
-    <div className="whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+    <div className="whitespace-pre-line rounded-xl border border-line bg-canvas p-4 text-[15px] leading-relaxed text-ink-2">
       {text}
     </div>
   )

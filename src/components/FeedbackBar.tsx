@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Lang } from '../types'
 import type { Vote } from '../data/repository'
 import { t } from '../i18n/ui'
+import { IconThumbDown, IconThumbUp } from './icons'
 
 interface Props {
   lang: Lang
@@ -49,7 +50,7 @@ export function FeedbackBar({ lang, vote, sent, busy, onVote, onSuggest }: Props
         {!open && !sent && (
           <button
             onClick={() => setOpen(true)}
-            className="rounded text-slate-400 underline underline-offset-2 transition hover:text-slate-600"
+            className="rounded text-ink-3 underline underline-offset-2 transition hover:text-ink-2"
           >
             {t('suggestEdit', lang)}
           </button>
@@ -60,14 +61,14 @@ export function FeedbackBar({ lang, vote, sent, busy, onVote, onSuggest }: Props
       </div>
 
       {open && (
-        <div className="mt-2 rounded-lg border border-slate-200 bg-white px-4 py-3">
+        <div className="mt-2 rounded-lg border border-line bg-white px-4 py-3">
           <textarea
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
             placeholder={t('suggestPlaceholder', lang)}
-            className="w-full resize-y rounded-md border border-slate-200 px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none focus:border-accent"
+            className="w-full resize-y rounded-md border border-line px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-accent"
           />
           <div className="mt-2 flex flex-wrap gap-2">
             <button
@@ -82,7 +83,7 @@ export function FeedbackBar({ lang, vote, sent, busy, onVote, onSuggest }: Props
                 setText('')
                 setOpen(false)
               }}
-              className="rounded-md px-3 py-1.5 text-sm text-slate-500 transition hover:bg-slate-100"
+              className="rounded-md px-3 py-1.5 text-sm text-ink-3 transition hover:bg-panel"
             >
               {t('cancel', lang)}
             </button>
@@ -117,13 +118,13 @@ function Thumb({
       title={label}
       aria-label={label}
       aria-pressed={active}
-      className={`rounded-full border px-2.5 py-1 transition disabled:opacity-50 ${
+      className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors duration-200 disabled:opacity-50 ${
         active
           ? on
-          : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+          : 'border-line text-ink-3 hover:border-line-strong hover:bg-panel hover:text-ink-2'
       }`}
     >
-      <span aria-hidden>{tone === 'up' ? '👍' : '👎'}</span>
+      {tone === 'up' ? <IconThumbUp size={17} /> : <IconThumbDown size={17} />}
     </button>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../types'
 import { t } from '../i18n/ui'
+import { IconArrowRight, IconClose, IconSearch, IconStar } from './icons'
 
 export interface SelectItem {
   id: string
@@ -10,7 +11,6 @@ export interface SelectItem {
 
 interface Props {
   lang: Lang
-  stepLabel: string
   title: string
   items: SelectItem[]
   onSelect: (id: string) => void
@@ -32,7 +32,6 @@ const SEARCH_MIN_ITEMS = 6
 
 export function SelectScreen({
   lang,
-  stepLabel,
   title,
   items,
   onSelect,
@@ -105,10 +104,7 @@ export function SelectScreen({
 
   return (
     <div className="fade-in">
-      <p className="text-xs font-semibold uppercase tracking-wider text-accent">
-        {stepLabel}
-      </p>
-      <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-ink sm:text-[2rem]">
         {title}
       </h1>
 
@@ -116,12 +112,10 @@ export function SelectScreen({
 
       {showSearch && (
         <div className="relative mt-5">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-          >
-            ⌕
-          </span>
+          <IconSearch
+            size={18}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+          />
           <input
             ref={searchInput}
             type="search"
@@ -129,28 +123,28 @@ export function SelectScreen({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('searchPlaceholder', lang)}
             aria-label={t('searchPlaceholder', lang)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-9 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-10 text-[15px] text-ink outline-none transition-colors duration-200 placeholder:text-ink-3 hover:border-line-strong focus:border-accent focus:ring-4 focus:ring-accent/12"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
               aria-label={t('searchClear', lang)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md px-1.5 py-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-3 transition-colors duration-200 hover:bg-panel hover:text-ink"
             >
-              ✕
+              <IconClose size={16} />
             </button>
           )}
         </div>
       )}
 
       {shown.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+        <p className="mt-6 rounded-xl border border-dashed border-line-strong bg-white px-4 py-10 text-center text-sm text-ink-3">
           {t('searchNoResults', lang)}
         </p>
       ) : (
         <>
           {showFavGroup && (
-            <p className="mt-6 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="mt-6 text-[11px] font-semibold uppercase tracking-wider text-ink-3">
               {t('favoritesGroup', lang)}
             </p>
           )}
@@ -158,7 +152,7 @@ export function SelectScreen({
             {shown.map((item, idx) => (
               <div key={item.id} className="contents">
                 {showFavGroup && idx === favCount && (
-                  <div className="col-span-full mt-2 border-t border-slate-200" />
+                  <div className="col-span-full mt-2 border-t border-line" />
                 )}
                 <Card
                   lang={lang}
@@ -211,22 +205,24 @@ function Card({
           onSelect(item.id)
         }
       }}
-      className="card card-hover group flex min-h-[88px] cursor-pointer items-start gap-3.5 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-accent focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30 sm:p-5"
+      className="card card-hover group flex min-h-[88px] cursor-pointer items-start gap-3.5 rounded-2xl border border-line bg-white p-4 text-left hover:border-accent-line focus:outline-none focus-visible:border-accent focus-visible:ring-4 focus-visible:ring-accent/15 sm:p-5"
     >
       {hotkey && (
         <span
           aria-hidden
-          className="mt-0.5 hidden h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-200 font-mono text-[11px] text-slate-400 transition group-hover:border-accent group-hover:text-accent sm:flex"
+          className="mt-0.5 hidden h-5 w-5 shrink-0 items-center justify-center rounded-md border border-line font-mono text-[11px] text-ink-3 transition-colors duration-200 group-hover:border-accent-line group-hover:bg-accent-soft group-hover:text-accent sm:flex"
         >
           {hotkey}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-lg font-semibold leading-snug text-slate-900">
+        <span className="text-[1.0625rem] font-semibold leading-snug text-ink">
           {item.label}
         </span>
         {item.hint && (
-          <span className="mt-1 text-sm text-slate-500">{item.hint}</span>
+          <span className="mt-1 text-sm leading-relaxed text-ink-3">
+            {item.hint}
+          </span>
         )}
       </span>
 
@@ -240,21 +236,19 @@ function Card({
             aria-pressed={starred}
             aria-label={t(starred ? 'removeFavorite' : 'addFavorite', lang)}
             title={t(starred ? 'removeFavorite' : 'addFavorite', lang)}
-            className={`-mr-1 -mt-1 rounded-md px-1.5 py-0.5 text-base leading-none transition ${
+            className={`-mr-1 -mt-1 flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-200 ${
               starred
-                ? 'text-amber-400 hover:text-amber-500'
-                : 'text-slate-300 hover:text-amber-400'
+                ? 'text-amber-500 hover:text-amber-600'
+                : 'text-line-strong hover:bg-panel hover:text-amber-500'
             }`}
           >
-            {starred ? '★' : '☆'}
+            <IconStar size={17} filled={starred} />
           </button>
         )}
-        <span
-          aria-hidden
-          className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-accent"
-        >
-          →
-        </span>
+        <IconArrowRight
+          size={18}
+          className="text-line-strong transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-accent"
+        />
       </span>
     </div>
   )

@@ -15,6 +15,7 @@ import {
 } from '../../data/repository'
 import { hasLang, pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
+import { IconCheck, IconClose } from '../../components/icons'
 import { AnswerScreen } from '../../components/AnswerScreen'
 
 interface Props {
@@ -187,17 +188,17 @@ export function RebuttalsSection({
 
   return (
     <section>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Скрипты</h2>
+      <h2 className="mb-4 text-lg font-semibold text-ink">Скрипты</h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
             Возражение
           </span>
           <select
             value={objId}
             onChange={(e) => setObjId(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           >
             {visibleObjections.map((o) => (
               <option key={o.id} value={o.id}>
@@ -207,13 +208,13 @@ export function RebuttalsSection({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
             Этап
           </span>
           <select
             value={stageId}
             onChange={(e) => setStageId(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           >
             {visibleStages.map((s) => (
               <option key={s.id} value={s.id}>
@@ -234,7 +235,7 @@ export function RebuttalsSection({
           multiline
         />
         <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[11px] font-medium uppercase text-slate-400">
+          <span className="text-[11px] font-medium uppercase text-ink-3">
             Переводы ответа:
           </span>
           {languages.map((l) => (
@@ -244,7 +245,7 @@ export function RebuttalsSection({
               className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                 hasLang(form.answer, l.code)
                   ? 'bg-accent-soft text-accent'
-                  : 'bg-slate-100 text-slate-300'
+                  : 'bg-panel text-line-strong'
               }`}
             >
               {l.code.toUpperCase()}
@@ -252,7 +253,7 @@ export function RebuttalsSection({
           ))}
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-ink-2">
           <input
             type="checkbox"
             checked={form.isDraft}
@@ -265,7 +266,7 @@ export function RebuttalsSection({
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-semibold text-slate-900">Ветки what-if</h3>
+            <h3 className="font-semibold text-ink">Ветки what-if</h3>
             <button
               onClick={addBranch}
               className="rounded-lg border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent-soft"
@@ -278,10 +279,10 @@ export function RebuttalsSection({
             {form.branches.map((b, i) => (
               <div
                 key={b.key}
-                className="space-y-3 rounded-xl border border-slate-200 bg-white p-4"
+                className="space-y-3 rounded-xl border border-line bg-white p-4"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-500">
+                  <span className="text-sm font-semibold text-ink-3">
                     Ветка {i + 1}
                   </span>
                   <button
@@ -316,17 +317,19 @@ export function RebuttalsSection({
               </div>
             ))}
             {form.branches.length === 0 && (
-              <p className="rounded-lg border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
+              <p className="rounded-lg border border-dashed border-line px-4 py-5 text-center text-sm text-ink-3">
                 Веток нет
               </p>
             )}
           </div>
         </div>
 
-        <div className="sticky bottom-0 -mx-4 mt-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="sticky bottom-0 -mx-4 mt-2 border-t border-line bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
           {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
           {saved && (
-            <p className="mb-2 text-sm text-emerald-600">Сохранено ✓</p>
+            <p className="mb-2 flex items-center gap-1.5 text-sm text-emerald-700">
+              <IconCheck size={15} /> Сохранено
+            </p>
           )}
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
@@ -339,7 +342,7 @@ export function RebuttalsSection({
             <button
               onClick={() => setPreview(true)}
               disabled={!objId || !stageId}
-              className="rounded-lg border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-lg border border-line-strong px-5 py-2.5 font-semibold text-ink-2 hover:bg-canvas disabled:opacity-50"
             >
               Предпросмотр
             </button>
@@ -412,15 +415,15 @@ function PreviewModal({
       aria-modal="true"
       aria-label="Предпросмотр скрипта"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm sm:p-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-4 backdrop-blur-sm sm:p-8"
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-3xl rounded-xl bg-white shadow-xl"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-ink">
               Так увидит оператор
             </span>
             <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent">
@@ -430,15 +433,15 @@ function PreviewModal({
           <button
             onClick={onClose}
             aria-label="Закрыть"
-            className="rounded-md px-2 py-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-md px-2 py-1 text-ink-3 transition hover:bg-panel hover:text-ink-2"
           >
-            ✕
+            <IconClose size={16} />
           </button>
         </div>
 
-        <div className="max-h-[75vh] overflow-y-auto bg-slate-50 px-5 py-6">
+        <div className="max-h-[75vh] overflow-y-auto bg-canvas px-5 py-6">
           {empty ? (
-            <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500">
+            <p className="rounded-lg border border-dashed border-line-strong bg-white px-4 py-8 text-center text-sm text-ink-3">
               Базовый скрипт на языке {langName} пуст — оператор увидит
               «скрипт готовится».
             </p>

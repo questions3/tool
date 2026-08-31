@@ -8,6 +8,7 @@ import {
   type SuggestionStatus,
 } from '../../data/repository'
 import { pick } from '../../i18n/ui'
+import { IconThumbDown, IconThumbUp } from '../../components/icons'
 
 interface Props {
   lang: string
@@ -84,7 +85,7 @@ export function FeedbackSection({ lang }: Props) {
 
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-ink">
             Оценки скриптов
           </h2>
           <div className="flex gap-1">
@@ -95,7 +96,7 @@ export function FeedbackSection({ lang }: Props) {
                 className={`rounded-md px-2.5 py-1 text-sm transition ${
                   days === p.days
                     ? 'bg-accent text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-ink-2 hover:bg-panel'
                 }`}
               >
                 {p.label}
@@ -104,24 +105,32 @@ export function FeedbackSection({ lang }: Props) {
           </div>
         </div>
 
-        {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
+        {loading && <p className="text-sm text-ink-3">Загрузка…</p>}
 
         {!loading && rows.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
             Операторы ещё не оценивали скрипты. Кнопки стоят под каждым
             скриптом, оценка добровольная.
           </p>
         )}
 
         {rows.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-line">
             <table className="w-full min-w-[34rem] text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="bg-canvas text-left text-xs uppercase tracking-wider text-ink-3">
                   <th className="px-4 py-2 font-medium">Возражение</th>
                   <th className="px-4 py-2 font-medium">Этап</th>
-                  <th className="px-4 py-2 text-right font-medium">👍</th>
-                  <th className="px-4 py-2 text-right font-medium">👎</th>
+                  <th className="px-4 py-2 font-medium">
+                    <span className="flex justify-end" title="Скрипт помог">
+                      <IconThumbUp size={15} />
+                    </span>
+                  </th>
+                  <th className="px-4 py-2 font-medium">
+                    <span className="flex justify-end" title="Скрипт не помог">
+                      <IconThumbDown size={15} />
+                    </span>
+                  </th>
                   <th className="px-4 py-2 text-right font-medium">Правки</th>
                 </tr>
               </thead>
@@ -129,29 +138,29 @@ export function FeedbackSection({ lang }: Props) {
                 {rows.map((r) => (
                   <tr
                     key={`${r.objectionId}:${r.stageId}`}
-                    className="border-t border-slate-100"
+                    className="border-t border-line"
                   >
-                    <td className="max-w-[16rem] truncate px-4 py-2 text-slate-900">
+                    <td className="max-w-[16rem] truncate px-4 py-2 text-ink">
                       {pick(r.label, lang) || Object.values(r.label)[0] || '—'}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">
+                    <td className="px-4 py-2 text-ink-3">
                       {pick(r.stageLabel, lang) ||
                         Object.values(r.stageLabel)[0] ||
                         '—'}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                    <td className="px-4 py-2 text-right tabular-nums text-ink-3">
                       {r.up || '—'}
                     </td>
                     <td
                       className={`px-4 py-2 text-right tabular-nums ${
                         r.down > r.up
                           ? 'font-semibold text-rose-700'
-                          : 'text-slate-500'
+                          : 'text-ink-3'
                       }`}
                     >
                       {r.down || '—'}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                    <td className="px-4 py-2 text-right tabular-nums text-ink-3">
                       {r.suggestions || '—'}
                     </td>
                   </tr>
@@ -164,7 +173,7 @@ export function FeedbackSection({ lang }: Props) {
 
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-ink">
             Предложенные правки
           </h2>
           <div className="flex gap-1">
@@ -175,7 +184,7 @@ export function FeedbackSection({ lang }: Props) {
                 className={`rounded-md px-2.5 py-1 text-sm transition ${
                   status === s.id
                     ? 'bg-accent text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-ink-2 hover:bg-panel'
                 }`}
               >
                 {s.label}
@@ -185,7 +194,7 @@ export function FeedbackSection({ lang }: Props) {
         </div>
 
         {!loading && suggestions.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
             {status === 'new'
               ? 'Новых предложений нет.'
               : 'В этой стопке пусто.'}
@@ -196,15 +205,15 @@ export function FeedbackSection({ lang }: Props) {
           {suggestions.map((s) => (
             <li
               key={s.id}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3"
+              className="rounded-lg border border-line bg-white px-4 py-3"
             >
-              <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-400">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-ink-3">
                 <span>
                   {s.agentEmail ?? 'без автора'} · {s.lang.toUpperCase()} ·{' '}
                   {formatWhen(s.createdAt)}
                 </span>
               </div>
-              <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-800">
+              <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink">
                 {s.body}
               </p>
               {status === 'new' && (
@@ -219,7 +228,7 @@ export function FeedbackSection({ lang }: Props) {
                   <button
                     onClick={() => void triage(s.id, 'dismissed')}
                     disabled={busy === s.id}
-                    className="rounded-md border border-slate-200 px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-line px-3 py-1 text-sm text-ink-3 transition hover:bg-canvas disabled:opacity-50"
                   >
                     Отклонить
                   </button>
@@ -229,7 +238,7 @@ export function FeedbackSection({ lang }: Props) {
                 <button
                   onClick={() => void triage(s.id, 'new')}
                   disabled={busy === s.id}
-                  className="mt-2 rounded text-xs text-slate-400 underline underline-offset-2 hover:text-slate-600 disabled:opacity-50"
+                  className="mt-2 rounded text-xs text-ink-3 underline underline-offset-2 hover:text-ink-2 disabled:opacity-50"
                 >
                   Вернуть в новые
                 </button>

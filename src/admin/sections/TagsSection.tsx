@@ -11,6 +11,7 @@ import {
 import { pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
 import { useConfirm } from '../components/Confirm'
+import { IconClose } from '../../components/icons'
 
 interface Props {
   lang: string
@@ -95,13 +96,13 @@ export function TagsSection({ lang, languages, objections }: Props) {
       )}
 
       <div>
-        <h2 className="mb-1 text-lg font-semibold text-slate-900">Теги</h2>
-        <p className="mb-4 text-sm text-slate-500">
+        <h2 className="mb-1 text-lg font-semibold text-ink">Теги</h2>
+        <p className="mb-4 text-sm text-ink-3">
           Оператор фильтрует список возражений по тегам в один клик. Тег без
           названия на языке оператору не показывается.
         </p>
 
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-2 rounded-lg border border-line bg-white p-4">
           <LocalizedInput
             label="Название тега"
             value={draft}
@@ -121,10 +122,10 @@ export function TagsSection({ lang, languages, objections }: Props) {
           </div>
         </div>
 
-        {loading && <p className="mt-4 text-sm text-slate-500">Загрузка…</p>}
+        {loading && <p className="mt-4 text-sm text-ink-3">Загрузка…</p>}
 
         {!loading && tags.length === 0 && (
-          <p className="mt-4 rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          <p className="mt-4 rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
             Тегов пока нет. Пока их нет, полоска фильтров у оператора не
             появляется.
           </p>
@@ -135,16 +136,16 @@ export function TagsSection({ lang, languages, objections }: Props) {
             {tags.map((tag) => (
               <li
                 key={tag.id}
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm"
+                className="flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-3 pr-1.5 text-sm"
               >
-                <span className="text-slate-900">
+                <span className="text-ink">
                   {pick(tag.label, lang) || (
-                    <span className="text-slate-400">
+                    <span className="text-ink-3">
                       без названия на «{lang}»
                     </span>
                   )}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-ink-3">
                   {links.filter((l) => l.tagId === tag.id).length}
                 </span>
                 <button
@@ -158,9 +159,9 @@ export function TagsSection({ lang, languages, objections }: Props) {
                     })
                   }
                   aria-label="Удалить тег"
-                  className="rounded-full px-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-red-600"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-ink-3 transition-colors duration-200 hover:bg-rose-50 hover:text-rose-600"
                 >
-                  ✕
+                  <IconClose size={14} />
                 </button>
               </li>
             ))}
@@ -170,13 +171,13 @@ export function TagsSection({ lang, languages, objections }: Props) {
 
       {tags.length > 0 && (
         <div>
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">
+          <h2 className="mb-4 text-lg font-semibold text-ink">
             Метки на возражениях
           </h2>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-line">
             <table className="w-full min-w-[30rem] text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="bg-canvas text-left text-xs uppercase tracking-wider text-ink-3">
                   <th className="px-4 py-2 font-medium">Возражение</th>
                   <th className="px-4 py-2 font-medium">Теги</th>
                 </tr>
@@ -185,8 +186,8 @@ export function TagsSection({ lang, languages, objections }: Props) {
                 {objections.map((o) => {
                   const mine = tagsOf(o.id)
                   return (
-                    <tr key={o.id} className="border-t border-slate-100">
-                      <td className="max-w-[16rem] truncate px-4 py-2 text-slate-900">
+                    <tr key={o.id} className="border-t border-line">
+                      <td className="max-w-[16rem] truncate px-4 py-2 text-ink">
                         {pick(o.label, lang) || Object.values(o.label)[0] || '—'}
                       </td>
                       <td className="px-4 py-2">
@@ -201,7 +202,7 @@ export function TagsSection({ lang, languages, objections }: Props) {
                                 className={`rounded-full border px-2.5 py-0.5 text-xs transition disabled:opacity-50 ${
                                   on
                                     ? 'border-accent bg-accent text-white'
-                                    : 'border-slate-200 text-slate-500 hover:border-accent hover:text-accent'
+                                    : 'border-line text-ink-3 hover:border-accent hover:text-accent'
                                 }`}
                               >
                                 {pick(tag.label, lang) || tag.slug}

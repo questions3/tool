@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconPlus } from '../../components/icons'
 import type { Language } from '../../types'
 import { deleteLanguage, saveLanguage } from '../../data/repository'
 import { useConfirm } from '../components/Confirm'
@@ -95,12 +96,13 @@ export function LanguagesSection({ languages, onChanged }: Props) {
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Языки</h2>
+        <h2 className="text-lg font-semibold text-ink">Языки</h2>
         <button
           onClick={startCreate}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
         >
-          + Добавить язык
+          <IconPlus size={16} />
+          Добавить язык
         </button>
       </div>
 
@@ -108,15 +110,15 @@ export function LanguagesSection({ languages, onChanged }: Props) {
         {languages.map((l) => (
           <li
             key={l.code}
-            className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+            className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3"
           >
             <div className="flex items-center gap-2">
-              <code className="rounded bg-slate-100 px-2 py-0.5 text-sm font-semibold text-slate-700">
+              <code className="rounded bg-panel px-2 py-0.5 text-sm font-semibold text-ink-2">
                 {l.code.toUpperCase()}
               </code>
-              <span className="text-slate-900">{l.name}</span>
+              <span className="text-ink">{l.name}</span>
               {!l.isEnabled && (
-                <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
+                <span className="rounded bg-line px-1.5 py-0.5 text-[11px] text-ink-2">
                   выключен
                 </span>
               )}
@@ -124,7 +126,7 @@ export function LanguagesSection({ languages, onChanged }: Props) {
             <div className="flex gap-2">
               <button
                 onClick={() => startEdit(l)}
-                className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+                className="rounded-md border border-line px-2.5 py-1 text-sm text-ink-2 hover:bg-canvas"
               >
                 Изменить
               </button>
@@ -139,7 +141,7 @@ export function LanguagesSection({ languages, onChanged }: Props) {
           </li>
         ))}
         {languages.length === 0 && (
-          <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          <li className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-3">
             Языков пока нет — добавьте первый
           </li>
         )}
@@ -147,12 +149,12 @@ export function LanguagesSection({ languages, onChanged }: Props) {
 
       {draft && (
         <div className="mt-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
-          <h3 className="font-semibold text-slate-900">
+          <h3 className="font-semibold text-ink">
             {draft.isNew ? 'Новый язык' : `Язык: ${draft.code.toUpperCase()}`}
           </h3>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Код
               </span>
               <input
@@ -160,24 +162,24 @@ export function LanguagesSection({ languages, onChanged }: Props) {
                 disabled={!draft.isNew}
                 onChange={(e) => setDraft({ ...draft, code: e.target.value })}
                 placeholder="en"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:bg-slate-100"
+                className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:bg-panel"
               />
             </label>
             <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Название
               </span>
               <input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 placeholder="English"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             </label>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Порядок (sort)
               </span>
               <input
@@ -186,10 +188,10 @@ export function LanguagesSection({ languages, onChanged }: Props) {
                 onChange={(e) =>
                   setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })
                 }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             </label>
-            <label className="mt-6 flex items-center gap-2 text-sm text-slate-700">
+            <label className="mt-6 flex items-center gap-2 text-sm text-ink-2">
               <input
                 type="checkbox"
                 checked={draft.isEnabled}
@@ -213,7 +215,7 @@ export function LanguagesSection({ languages, onChanged }: Props) {
             </button>
             <button
               onClick={() => setDraft(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm text-ink-2 hover:bg-canvas"
             >
               Отмена
             </button>

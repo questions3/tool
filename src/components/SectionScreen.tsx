@@ -3,6 +3,7 @@ import type { Lang, SectionId } from '../types'
 import { hasLang, pick, t, type UiKey } from '../i18n/ui'
 import { useEntries } from '../hooks/useEntries'
 import { Stepper } from './Stepper'
+import { IconArrowRight } from './icons'
 
 interface Props {
   lang: Lang
@@ -65,22 +66,20 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
                 <li key={e.id}>
                   <button
                     onClick={() => setOpenId(e.id)}
-                    className="card card-hover group flex w-full items-start gap-3.5 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-accent sm:p-5"
+                    className="card card-hover group flex w-full items-start gap-3.5 rounded-xl border border-line bg-white p-4 text-left transition hover:border-accent sm:p-5"
                   >
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-lg font-semibold leading-snug text-slate-900">
+                      <span className="text-lg font-semibold leading-snug text-ink">
                         {pick(e.title, lang)}
                       </span>
-                      <span className="mt-1 line-clamp-2 text-sm text-slate-500">
+                      <span className="mt-1 line-clamp-2 text-sm text-ink-3">
                         {pick(e.body, lang)}
                       </span>
                     </span>
-                    <span
-                      aria-hidden
-                      className="mt-0.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-accent"
-                    >
-                      →
-                    </span>
+                    <IconArrowRight
+                      size={18}
+                      className="mt-0.5 shrink-0 text-line-strong transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-accent"
+                    />
                   </button>
                 </li>
               ))}
@@ -94,7 +93,7 @@ export function SectionScreen({ lang, section, titleKey }: Props) {
 
 function ContentCard({ text }: { text: string }) {
   return (
-    <div className="mt-5 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-slate-900">
+    <div className="mt-5 whitespace-pre-line rounded-lg border border-accent/30 bg-accent-soft p-4 text-[15px] leading-relaxed text-ink">
       {text}
     </div>
   )
@@ -112,7 +111,7 @@ function Notice({
       className={`mt-6 rounded-lg border px-4 py-6 text-center text-sm ${
         tone === 'error'
           ? 'border-red-200 bg-red-50 text-red-600'
-          : 'border-slate-200 bg-white text-slate-500'
+          : 'border-line bg-white text-ink-3'
       }`}
     >
       {children}

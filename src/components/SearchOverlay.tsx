@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Lang } from '../types'
 import { t } from '../i18n/ui'
 import { searchContent, type SearchHit } from '../data/repository'
+import { IconClose, IconSearch } from './icons'
 
 interface Props {
   lang: Lang
@@ -67,17 +68,15 @@ export function SearchOverlay({ lang, onClose, onGo }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/30 px-4 pt-[10vh] backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-ink/25 px-4 pt-[10vh] backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[75vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className="flex max-h-[75vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_24px_60px_-12px_rgba(14,19,48,0.28)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
-          <span aria-hidden className="text-slate-400">
-            ⌕
-          </span>
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <IconSearch size={18} className="shrink-0 text-ink-3" />
           <input
             ref={input}
             type="search"
@@ -85,25 +84,25 @@ export function SearchOverlay({ lang, onClose, onGo }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('searchAll', lang)}
             aria-label={t('searchAll', lang)}
-            className="min-w-0 flex-1 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+            className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
           />
           <button
             onClick={onClose}
             aria-label={t('cancel', lang)}
-            className="rounded-md px-2 py-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-3 transition-colors duration-200 hover:bg-panel hover:text-ink"
           >
-            ✕
+            <IconClose size={16} />
           </button>
         </div>
 
         <div className="overflow-y-auto">
           {query.trim().length < 2 && (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">
+            <p className="px-4 py-10 text-center text-sm text-ink-3">
               {t('searchHint', lang)}
             </p>
           )}
           {query.trim().length >= 2 && loading && (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">
+            <p className="px-4 py-10 text-center text-sm text-ink-3">
               {t('loading', lang)}
             </p>
           )}
@@ -113,7 +112,7 @@ export function SearchOverlay({ lang, onClose, onGo }: Props) {
             </p>
           )}
           {!loading && !error && query.trim().length >= 2 && hits.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">
+            <p className="px-4 py-10 text-center text-sm text-ink-3">
               {t('searchEmpty', lang)}
             </p>
           )}
@@ -122,18 +121,18 @@ export function SearchOverlay({ lang, onClose, onGo }: Props) {
             <button
               key={i}
               onClick={() => onGo(hit)}
-              className="flex w-full flex-col gap-1 border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50"
+              className="flex w-full flex-col gap-1 border-b border-line px-4 py-3 text-left transition-colors duration-150 last:border-b-0 hover:bg-panel"
             >
               <span className="flex items-baseline gap-2">
                 <span className="shrink-0 rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
                   {t(KIND_KEY[hit.kind], lang)}
                 </span>
-                <span className="truncate font-medium text-slate-900">
+                <span className="truncate font-medium text-ink">
                   {hit.title}
                 </span>
               </span>
               {hit.snippet && (
-                <span className="line-clamp-2 text-sm text-slate-500">
+                <span className="line-clamp-2 text-sm text-ink-3">
                   {hit.snippet}
                 </span>
               )}

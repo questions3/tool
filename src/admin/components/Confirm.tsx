@@ -43,7 +43,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       {state && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
           onClick={() => close(false)}
         >
           <div
@@ -52,14 +52,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="whitespace-pre-line text-sm text-slate-800">
+            <p className="whitespace-pre-line text-sm text-ink">
               {state.message}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 autoFocus
                 onClick={() => close(false)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-line-strong px-4 py-2 text-sm text-ink-2 hover:bg-canvas"
               >
                 Отмена
               </button>

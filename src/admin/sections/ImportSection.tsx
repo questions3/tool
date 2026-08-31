@@ -141,19 +141,19 @@ export function ImportSection({
   return (
     <section className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-lg font-semibold text-ink">
           Импорт из Word / Excel
         </h2>
-        <p className="mt-1 max-w-2xl text-sm text-slate-500">
+        <p className="mt-1 max-w-2xl text-sm text-ink-3">
           Загрузите файл со скриптами — он будет разобран на название
           возражения и варианты ответа. Первый вариант станет базовым
           скриптом, остальные — ветками what-if. Импорт идёт в язык{' '}
-          <b className="text-slate-700">{langName}</b>; переключить его можно
+          <b className="text-ink-2">{langName}</b>; переключить его можно
           сверху страницы.
         </p>
       </div>
 
-      <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-600 transition hover:border-accent hover:text-accent">
+      <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-dashed border-line-strong px-4 py-3 text-sm text-ink-2 transition hover:border-accent hover:text-accent">
         <span aria-hidden>📄</span>
         <span>{fileName || 'Выбрать файл .docx или .xlsx'}</span>
         <input
@@ -179,9 +179,9 @@ export function ImportSection({
       )}
 
       {parsed && (
-        <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-4 rounded-xl border border-line bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-ink">
               Распознано ({parsed.source === 'docx' ? 'Word' : 'Excel'})
             </h3>
             <span className="rounded bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
@@ -191,24 +191,24 @@ export function ImportSection({
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Название возражения
             </span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Этап разговора
             </span>
             <select
               value={stageId}
               onChange={(e) => setStageId(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             >
               {visibleStages.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -222,20 +222,20 @@ export function ImportSection({
             {parsed.items.map((it, i) => (
               <div
                 key={i}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                className="rounded-lg border border-line bg-canvas p-3"
               >
                 <div className="flex items-center gap-2">
                   <span
                     className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
                       i === 0
                         ? 'bg-accent-soft text-accent'
-                        : 'bg-slate-200 text-slate-600'
+                        : 'bg-line text-ink-2'
                     }`}
                   >
                     {i === 0 ? 'Базовый скрипт' : `Ветка · ${it.label}`}
                   </span>
                 </div>
-                <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-slate-600">
+                <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-2">
                   {it.text}
                 </p>
               </div>
@@ -256,7 +256,7 @@ export function ImportSection({
                 setFileName('')
               }}
               disabled={busy}
-              className="rounded-lg border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-lg border border-line-strong px-5 py-2.5 font-semibold text-ink-2 hover:bg-canvas disabled:opacity-50"
             >
               Отмена
             </button>

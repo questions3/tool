@@ -4,6 +4,7 @@ import type { AuthFailure, AuthResult } from '../hooks/useAuth'
 import { t } from '../i18n/ui'
 import type { UiKey } from '../i18n/ui'
 import { LangToggle } from './LangToggle'
+import { Logo } from './Logo'
 
 interface Props {
   lang: Lang
@@ -79,15 +80,22 @@ export function Login({
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-5 py-10">
-      <div className="w-full max-w-md fade-in">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden px-5 py-10">
+      {/* Мягкий отсвет бренда за карточкой — единственная декоративная
+          заливка во всём приложении, и та на экране, где оператор ещё
+          не работает. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full opacity-[0.07] blur-3xl brand-fill"
+      />
+      <div className="relative w-full max-w-md fade-in">
         <div className="mb-6 flex items-center justify-between">
           <Wordmark lang={lang} />
           <LangToggle lang={lang} languages={languages} onChange={onLangChange} />
         </div>
 
-        <div className="card rounded-2xl border border-slate-200 bg-white p-7">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <div className="card rounded-2xl border border-line bg-white p-7 shadow-[0_12px_40px_-16px_rgba(14,19,48,0.14)]">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
             {t('loginTitle', lang)}
           </h1>
 
@@ -95,7 +103,7 @@ export function Login({
             <form onSubmit={submitEmail} noValidate>
               <label
                 htmlFor="login-email"
-                className="mt-6 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                className="mt-6 block text-xs font-semibold uppercase tracking-wider text-ink-3"
               >
                 {t('emailLabel', lang)}
               </label>
@@ -112,7 +120,7 @@ export function Login({
                   if (error) setError(null)
                 }}
                 placeholder={t('emailPlaceholder', lang)}
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg border border-line-strong bg-white px-4 py-3 text-ink outline-none transition placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-accent/12 disabled:opacity-60"
               />
 
               {error && <p className="mt-2 text-sm text-red-600">{t(error, lang)}</p>}
@@ -120,21 +128,21 @@ export function Login({
               <button
                 type="submit"
                 disabled={!configured || busy || !email.trim()}
-                className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                className="brand-fill mt-6 w-full rounded-xl px-4 py-3 font-semibold text-white shadow-[0_6px_16px_-6px_rgba(87,65,248,0.6)] transition-all duration-200 hover:shadow-[0_10px_22px_-8px_rgba(87,65,248,0.7)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
               >
                 {busy ? t('sending', lang) : t('sendCode', lang)}
               </button>
             </form>
           ) : (
             <form onSubmit={submitCode} noValidate>
-              <p className="mt-6 text-sm text-slate-500">
+              <p className="mt-6 text-sm text-ink-3">
                 {t('codeSentTo', lang)}{' '}
-                <span className="font-semibold text-slate-700">{email}</span>
+                <span className="font-semibold text-ink-2">{email}</span>
               </p>
 
               <label
                 htmlFor="login-code"
-                className="mt-5 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                className="mt-5 block text-xs font-semibold uppercase tracking-wider text-ink-3"
               >
                 {t('codeLabel', lang)}
               </label>
@@ -155,7 +163,7 @@ export function Login({
                   if (error) setError(null)
                 }}
                 placeholder={t('codePlaceholder', lang)}
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-center text-lg tracking-[0.4em] text-slate-900 outline-none transition placeholder:tracking-normal placeholder:text-slate-400 focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg border border-line-strong bg-white px-4 py-3 text-center text-lg tracking-[0.4em] text-ink outline-none transition placeholder:tracking-normal placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-accent/12 disabled:opacity-60"
               />
 
               {error && <p className="mt-2 text-sm text-red-600">{t(error, lang)}</p>}
@@ -163,7 +171,7 @@ export function Login({
               <button
                 type="submit"
                 disabled={busy || code.length < OTP_MIN_LENGTH}
-                className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                className="brand-fill mt-6 w-full rounded-xl px-4 py-3 font-semibold text-white shadow-[0_6px_16px_-6px_rgba(87,65,248,0.6)] transition-all duration-200 hover:shadow-[0_10px_22px_-8px_rgba(87,65,248,0.7)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
               >
                 {busy ? t('verifying', lang) : t('enter', lang)}
               </button>
@@ -173,7 +181,7 @@ export function Login({
                   type="button"
                   onClick={backToEmail}
                   disabled={busy}
-                  className="text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline disabled:opacity-60"
+                  className="text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline disabled:opacity-60"
                 >
                   {t('changeEmail', lang)}
                 </button>
@@ -190,7 +198,7 @@ export function Login({
           )}
         </div>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-ink-3">
           {t('emailHint', lang)}
         </p>
       </div>
@@ -199,17 +207,5 @@ export function Login({
 }
 
 function Wordmark({ lang }: { lang: Lang }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-xl font-bold text-white">
-        C
-      </span>
-      <div className="leading-tight">
-        <div className="text-lg font-bold text-slate-900">
-          {t('appName', lang)}
-        </div>
-        <div className="text-[11px] text-slate-500">{t('appTagline', lang)}</div>
-      </div>
-    </div>
-  )
+  return <Logo size={40} subtitle={t('appTagline', lang)} id="login" />
 }

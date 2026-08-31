@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconPlus } from '../../components/icons'
 import type { Language, Localized, Objection, Stage } from '../../types'
 import { reorderSwap, type TermInput } from '../../data/repository'
 import { hasLang } from '../../i18n/ui'
@@ -187,23 +188,24 @@ export function TermSection({
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <button
           onClick={startCreate}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
         >
-          + Добавить {singular}
+          <IconPlus size={16} />
+          Добавить {singular}
         </button>
       </div>
 
       {hasUntranslated && (
         <button
           onClick={() => setShowUntranslated((v) => !v)}
-          className="mb-3 text-xs font-medium text-slate-400 hover:text-slate-600"
+          className="mb-3 text-xs font-medium text-ink-3 hover:text-ink-2"
         >
           {showUntranslated
             ? '− Скрыть без перевода'
-            : '+ Показать без перевода'}
+            : 'Показать без перевода'}
         </button>
       )}
 
@@ -211,19 +213,19 @@ export function TermSection({
         {visible.map((t, idx) => (
           <li
             key={t.id}
-            className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+            className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="truncate font-medium text-slate-900">
+                <span className="truncate font-medium text-ink">
                   {t.label[lang] || (
-                    <em className="text-slate-400">
+                    <em className="text-ink-3">
                       нет перевода ({lang.toUpperCase()})
                     </em>
                   )}
                 </span>
                 {t.isEnabled === false && (
-                  <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
+                  <span className="shrink-0 rounded bg-line px-1.5 py-0.5 text-[11px] text-ink-2">
                     выключено
                   </span>
                 )}
@@ -236,14 +238,14 @@ export function TermSection({
                     className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                       hasLang(t.label, l.code)
                         ? 'bg-accent-soft text-accent'
-                        : 'bg-slate-100 text-slate-300'
+                        : 'bg-panel text-line-strong'
                     }`}
                   >
                     {l.code.toUpperCase()}
                   </span>
                 ))}
                 {t.hint[lang] && (
-                  <span className="ml-1 truncate text-sm text-slate-500">
+                  <span className="ml-1 truncate text-sm text-ink-3">
                     {t.hint[lang]}
                   </span>
                 )}
@@ -255,7 +257,7 @@ export function TermSection({
                   onClick={() => move(idx, -1)}
                   disabled={busy || idx === 0}
                   aria-label="Выше"
-                  className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                  className="px-1 text-ink-3 hover:text-ink-2 disabled:opacity-30"
                 >
                   ▲
                 </button>
@@ -263,14 +265,14 @@ export function TermSection({
                   onClick={() => move(idx, 1)}
                   disabled={busy || idx === visible.length - 1}
                   aria-label="Ниже"
-                  className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                  className="px-1 text-ink-3 hover:text-ink-2 disabled:opacity-30"
                 >
                   ▼
                 </button>
               </div>
               <button
                 onClick={() => startEdit(t)}
-                className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+                className="rounded-md border border-line px-2.5 py-1 text-sm text-ink-2 hover:bg-canvas"
               >
                 Изменить
               </button>
@@ -285,7 +287,7 @@ export function TermSection({
           </li>
         ))}
         {visible.length === 0 && (
-          <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          <li className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-3">
             {items.length === 0
               ? 'Пока пусто'
               : `Нет элементов с переводом на ${lang.toUpperCase()}`}
@@ -295,7 +297,7 @@ export function TermSection({
 
       {draft && (
         <div className="mt-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
-          <h3 className="font-semibold text-slate-900">
+          <h3 className="font-semibold text-ink">
             {draft.id ? 'Редактирование' : `Новый: ${singular}`} ·{' '}
             <span className="text-accent">{lang.toUpperCase()}</span>
           </h3>
@@ -315,7 +317,7 @@ export function TermSection({
             onChange={(hint) => setDraft({ ...draft, hint })}
           />
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-ink-2">
             <input
               type="checkbox"
               checked={draft.isEnabled}
@@ -338,7 +340,7 @@ export function TermSection({
             </button>
             <button
               onClick={() => setDraft(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm text-ink-2 hover:bg-canvas"
             >
               Отмена
             </button>

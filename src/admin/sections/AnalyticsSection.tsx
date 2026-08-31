@@ -66,7 +66,7 @@ export function AnalyticsSection({ lang }: Props) {
     <section className="flex flex-col gap-8">
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-ink">
             Что открывают операторы
           </h2>
           <div className="flex gap-1">
@@ -77,7 +77,7 @@ export function AnalyticsSection({ lang }: Props) {
                 className={`rounded-md px-2.5 py-1 text-sm transition ${
                   days === p.days
                     ? 'bg-accent text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : 'text-ink-2 hover:bg-panel'
                 }`}
               >
                 {p.label}
@@ -86,7 +86,7 @@ export function AnalyticsSection({ lang }: Props) {
           </div>
         </div>
 
-        {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
+        {loading && <p className="text-sm text-ink-3">Загрузка…</p>}
         {error && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             Ошибка: {error}
@@ -94,7 +94,7 @@ export function AnalyticsSection({ lang }: Props) {
         )}
 
         {!loading && !error && usage.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
             За выбранный период открытий не было. Статистика появится, когда
             операторы начнут пользоваться скриптами.
           </p>
@@ -102,29 +102,29 @@ export function AnalyticsSection({ lang }: Props) {
 
         {!loading && !error && usage.length > 0 && (
           <>
-            <p className="mb-3 text-sm text-slate-500">
-              Всего открытий: <b className="text-slate-900">{totalViews}</b> ·
+            <p className="mb-3 text-sm text-ink-3">
+              Всего открытий: <b className="text-ink">{totalViews}</b> ·
               возражений в работе:{' '}
-              <b className="text-slate-900">{usage.length}</b>
+              <b className="text-ink">{usage.length}</b>
             </p>
             <ul className="flex flex-col gap-2">
               {usage.map((row) => (
                 <li
                   key={row.objectionId}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-3"
+                  className="rounded-lg border border-line bg-white px-4 py-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="truncate font-medium text-slate-900">
+                    <span className="truncate font-medium text-ink">
                       {pick(row.label, lang) ||
                         Object.values(row.label)[0] ||
                         '—'}
                     </span>
-                    <span className="shrink-0 text-sm tabular-nums text-slate-500">
+                    <span className="shrink-0 text-sm tabular-nums text-ink-3">
                       {row.views}
                     </span>
                   </div>
                   {/* Полоса — доля от самого популярного возражения. */}
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel">
                     <div
                       className="h-full rounded-full bg-accent"
                       style={{
@@ -149,28 +149,28 @@ export function AnalyticsSection({ lang }: Props) {
       />
 
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">
+        <h2 className="mb-4 text-lg font-semibold text-ink">
           Последние входы операторов
         </h2>
         {!loading && !error && logins.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
             Входов пока не зафиксировано.
           </p>
         )}
         {logins.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-line">
             <table className="w-full min-w-[24rem] text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="bg-canvas text-left text-xs uppercase tracking-wider text-ink-3">
                   <th className="px-4 py-2 font-medium">Оператор</th>
                   <th className="px-4 py-2 font-medium">Когда</th>
                 </tr>
               </thead>
               <tbody>
                 {logins.map((l) => (
-                  <tr key={l.id} className="border-t border-slate-100">
-                    <td className="px-4 py-2 text-slate-900">{l.email}</td>
-                    <td className="px-4 py-2 tabular-nums text-slate-500">
+                  <tr key={l.id} className="border-t border-line">
+                    <td className="px-4 py-2 text-ink">{l.email}</td>
+                    <td className="px-4 py-2 tabular-nums text-ink-3">
                       {formatWhen(l.loggedAt)}
                     </td>
                   </tr>
@@ -222,7 +222,7 @@ function OutcomesBlock({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-lg font-semibold text-ink">
           Эффективность скриптов
         </h2>
         {marked.length > 1 && (
@@ -232,7 +232,7 @@ function OutcomesBlock({
               className={`rounded-md px-2.5 py-1 text-sm transition ${
                 !sortByProblem
                   ? 'bg-accent text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  : 'text-ink-2 hover:bg-panel'
               }`}
             >
               По отметкам
@@ -242,7 +242,7 @@ function OutcomesBlock({
               className={`rounded-md px-2.5 py-1 text-sm transition ${
                 sortByProblem
                   ? 'bg-accent text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  : 'text-ink-2 hover:bg-panel'
               }`}
             >
               По проблемным
@@ -252,7 +252,7 @@ function OutcomesBlock({
       </div>
 
       {marked.length === 0 && (
-        <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-3">
           Операторы ещё не отмечали исход разговора. Отметка появляется под
           скриптом и ставится по желанию — цифры накопятся за пару недель.
         </p>
@@ -260,10 +260,10 @@ function OutcomesBlock({
 
       {marked.length > 0 && (
         <>
-          <p className="mb-3 text-sm text-slate-500">
-            Отмечено <b className="text-slate-900">{totalMarked}</b> из{' '}
+          <p className="mb-3 text-sm text-ink-3">
+            Отмечено <b className="text-ink">{totalMarked}</b> из{' '}
             {totalViews} открытий ({coverage}%) · успешных{' '}
-            <b className="text-slate-900">
+            <b className="text-ink">
               {Math.round((totalSuccess / totalMarked) * 100)}%
             </b>
           </p>
@@ -275,10 +275,10 @@ function OutcomesBlock({
             </p>
           )}
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-line">
             <table className="w-full min-w-[34rem] text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="bg-canvas text-left text-xs uppercase tracking-wider text-ink-3">
                   <th className="px-4 py-2 font-medium">Возражение</th>
                   <th className="px-4 py-2 text-right font-medium">Открытий</th>
                   <th className="px-4 py-2 text-right font-medium">Отмечено</th>
@@ -292,20 +292,20 @@ function OutcomesBlock({
                   // Меньше десяти отметок — цифра случайна, не выделяем её.
                   const thin = r.marked < 10
                   return (
-                    <tr key={r.objectionId} className="border-t border-slate-100">
-                      <td className="max-w-[18rem] truncate px-4 py-2 text-slate-900">
+                    <tr key={r.objectionId} className="border-t border-line">
+                      <td className="max-w-[18rem] truncate px-4 py-2 text-ink">
                         {pick(r.label, lang) || Object.values(r.label)[0] || '—'}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink-3">
                         {r.views}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-500">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink-3">
                         {r.marked}
                       </td>
                       <td
                         className={`px-4 py-2 text-right tabular-nums ${
                           thin
-                            ? 'text-slate-400'
+                            ? 'text-ink-3'
                             : share >= 50
                               ? 'font-semibold text-emerald-700'
                               : 'font-semibold text-rose-700'
@@ -323,7 +323,7 @@ function OutcomesBlock({
               </tbody>
             </table>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-3">
             <span className="flex items-center gap-3">
               <Dot cls="bg-emerald-500" text="сработало" />
               <Dot cls="bg-amber-400" text="перезвон" />
@@ -357,7 +357,7 @@ function Split({ row }: { row: OutcomeRow }) {
     { n: row.lost, cls: 'bg-rose-400', title: 'Не сработало' },
   ]
   return (
-    <div className="flex h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
+    <div className="flex h-1.5 w-28 overflow-hidden rounded-full bg-panel">
       {parts.map((p) => (
         <div
           key={p.title}

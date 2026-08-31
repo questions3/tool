@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { IconPlus } from '../../components/icons'
 import type { Entry, Language, Localized, SectionId } from '../../types'
 import {
   deleteEntry,
@@ -168,25 +169,26 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
   return (
     <section>
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-ink">{title}</h2>
         <button
           onClick={startCreate}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
         >
-          + Добавить
+          <IconPlus size={16} />
+          Добавить
         </button>
       </div>
       {hasUntranslated && !loading && !error && (
         <button
           onClick={() => setShowUntranslated((v) => !v)}
-          className="mb-1 text-xs font-medium text-slate-400 hover:text-slate-600"
+          className="mb-1 text-xs font-medium text-ink-3 hover:text-ink-2"
         >
           {showUntranslated
             ? '− Скрыть без перевода'
-            : '+ Показать без перевода'}
+            : 'Показать без перевода'}
         </button>
       )}
-      {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
+      {loading && <p className="text-sm text-ink-3">Загрузка…</p>}
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           Ошибка: {error}
@@ -198,19 +200,19 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
           {visible.map((e, idx) => (
             <li
               key={e.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate font-medium text-slate-900">
+                  <span className="truncate font-medium text-ink">
                     {e.title[lang] || (
-                      <em className="text-slate-400">
+                      <em className="text-ink-3">
                         нет перевода ({lang.toUpperCase()})
                       </em>
                     )}
                   </span>
                   {e.isEnabled === false && (
-                    <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
+                    <span className="shrink-0 rounded bg-line px-1.5 py-0.5 text-[11px] text-ink-2">
                       выключено
                     </span>
                   )}
@@ -223,7 +225,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
                       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                         has(e.title, l.code)
                           ? 'bg-accent-soft text-accent'
-                          : 'bg-slate-100 text-slate-300'
+                          : 'bg-panel text-line-strong'
                       }`}
                     >
                       {l.code.toUpperCase()}
@@ -237,7 +239,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
                     onClick={() => move(idx, -1)}
                     disabled={busy || idx === 0}
                     aria-label="Выше"
-                    className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                    className="px-1 text-ink-3 hover:text-ink-2 disabled:opacity-30"
                   >
                     ▲
                   </button>
@@ -245,14 +247,14 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
                     onClick={() => move(idx, 1)}
                     disabled={busy || idx === visible.length - 1}
                     aria-label="Ниже"
-                    className="px-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                    className="px-1 text-ink-3 hover:text-ink-2 disabled:opacity-30"
                   >
                     ▼
                   </button>
                 </div>
                 <button
                   onClick={() => startEdit(e)}
-                  className="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+                  className="rounded-md border border-line px-2.5 py-1 text-sm text-ink-2 hover:bg-canvas"
                 >
                   Изменить
                 </button>
@@ -267,7 +269,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
             </li>
           ))}
           {visible.length === 0 && (
-            <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            <li className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-3">
               {entries.length === 0
                 ? 'Пока пусто — добавьте первый элемент'
                 : `Нет элементов с переводом на ${lang.toUpperCase()}`}
@@ -279,7 +281,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
       {/* Шаг 2 — заполнение для выбранного языка */}
       {draft && (
         <div className="mt-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4">
-          <h3 className="font-semibold text-slate-900">
+          <h3 className="font-semibold text-ink">
             {draft.id ? 'Редактирование' : 'Новый элемент'} ·{' '}
             <span className="text-accent">
               {lang.toUpperCase()} · {langName}
@@ -287,19 +289,19 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
           </h3>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Заголовок ({lang.toUpperCase()})
             </span>
             <input
               value={draft.title[lang] ?? ''}
               onChange={(e) => setField('title', e.target.value)}
               placeholder="Заголовок в списке"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Контент ({lang.toUpperCase()})
             </span>
             <textarea
@@ -307,11 +309,11 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
               value={draft.body[lang] ?? ''}
               onChange={(e) => setField('body', e.target.value)}
               placeholder="Текст спича / презентации"
-              className="resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="resize-y rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-ink-2">
             <input
               type="checkbox"
               checked={draft.isEnabled}
@@ -336,7 +338,7 @@ export function EntriesSection({ section, title, lang, languages }: Props) {
             </button>
             <button
               onClick={() => setDraft(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-line-strong px-4 py-2 text-sm text-ink-2 hover:bg-canvas"
             >
               Отмена
             </button>

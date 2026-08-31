@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconPlus } from '../../components/icons'
 import type { AgentEmail } from '../../data/repository'
 import { deleteAgentEmail, saveAgentEmail } from '../../data/repository'
 import { useConfirm } from '../components/Confirm'
@@ -67,8 +68,8 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
 
   return (
     <section>
-      <h2 className="mb-1 text-lg font-semibold text-slate-900">Агенты</h2>
-      <p className="mb-4 text-sm text-slate-500">
+      <h2 className="mb-1 text-lg font-semibold text-ink">Агенты</h2>
+      <p className="mb-4 text-sm text-ink-3">
         Кому можно входить в приложение по коду на email. Логин на{' '}
         <code>/</code> отправляет одноразовый код только адресам из этого списка.
       </p>
@@ -77,10 +78,10 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
         onSubmit={add}
         className="mb-5 space-y-3 rounded-xl border border-accent/30 bg-accent-soft/40 p-4"
       >
-        <h3 className="font-semibold text-slate-900">Добавить агента</h3>
+        <h3 className="font-semibold text-ink">Добавить агента</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Email
             </span>
             <input
@@ -94,18 +95,18 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
                 if (error) setError(null)
               }}
               placeholder="agent@convvy.com"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
               Имя / заметка (необязательно)
             </span>
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Анна, смена 2"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              className="rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
         </div>
@@ -115,9 +116,16 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
         >
-          {busy ? 'Сохранение…' : '+ Добавить агента'}
+          {busy ? (
+            'Сохранение…'
+          ) : (
+            <>
+              <IconPlus size={16} />
+              Добавить агента
+            </>
+          )}
         </button>
       </form>
 
@@ -125,12 +133,12 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
         {agentEmails.map((a) => (
           <li
             key={a.email}
-            className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+            className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3"
           >
             <div className="min-w-0">
-              <div className="truncate text-slate-900">{a.email}</div>
+              <div className="truncate text-ink">{a.email}</div>
               {a.note && (
-                <div className="truncate text-xs text-slate-500">{a.note}</div>
+                <div className="truncate text-xs text-ink-3">{a.note}</div>
               )}
             </div>
             <button
@@ -143,7 +151,7 @@ export function AgentsSection({ agentEmails, onChanged }: Props) {
           </li>
         ))}
         {agentEmails.length === 0 && (
-          <li className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          <li className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-3">
             Список пуст — добавьте первого агента
           </li>
         )}

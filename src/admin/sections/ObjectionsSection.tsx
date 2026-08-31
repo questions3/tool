@@ -92,18 +92,18 @@ function ClonePanel({
   if (sources.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-slate-900">
+    <div className="rounded-lg border border-line bg-white p-4">
+      <h3 className="text-sm font-semibold text-ink">
         Скопировать на «{lang.toUpperCase()}» с другого языка
       </h3>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-ink-3">
         Заполняет только пустые поля. Скопированный текст помечается как
         непереведённый и оператору не показывается, пока его не отредактируют.
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
             Возражение
           </span>
           <select
@@ -112,7 +112,7 @@ function ClonePanel({
               setObjectionId(e.target.value)
               setDone(false)
             }}
-            className="min-w-[14rem] rounded-md border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-accent"
+            className="min-w-[14rem] rounded-md border border-line px-3 py-1.5 text-sm outline-none focus:border-accent"
           >
             <option value="">— выберите —</option>
             {objections.map((o) => (
@@ -124,7 +124,7 @@ function ClonePanel({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
             Откуда
           </span>
           <select
@@ -133,7 +133,7 @@ function ClonePanel({
               setFrom(e.target.value)
               setDone(false)
             }}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-accent"
+            className="rounded-md border border-line px-3 py-1.5 text-sm outline-none focus:border-accent"
           >
             <option value="">— язык —</option>
             {sources.map((l) => (
@@ -154,7 +154,7 @@ function ClonePanel({
       </div>
 
       {chosen && from && !done && (
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-ink-3">
           «{pick(chosen.label, from) || '—'}» → {lang.toUpperCase()}
         </p>
       )}

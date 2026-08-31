@@ -16,7 +16,7 @@ export function LangToggle({ lang, languages, onChange }: Props) {
         value={lang}
         onChange={(e) => onChange(e.target.value)}
         aria-label="Язык"
-        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+        className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm font-medium text-ink-2 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
       >
         {languages.map((l) => (
           <option key={l.code} value={l.code}>
@@ -28,7 +28,7 @@ export function LangToggle({ lang, languages, onChange }: Props) {
   }
 
   return (
-    <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm font-medium">
+    <div className="inline-flex rounded-lg border border-line bg-white p-0.5 text-sm font-medium">
       {languages.map((l) => (
         <button
           key={l.code}
@@ -37,7 +37,7 @@ export function LangToggle({ lang, languages, onChange }: Props) {
           className={`rounded-md px-2.5 py-1 transition-colors ${
             lang === l.code
               ? 'bg-accent text-white'
-              : 'text-slate-500 hover:text-slate-900'
+              : 'text-ink-3 hover:text-ink'
           }`}
           aria-pressed={lang === l.code}
         >

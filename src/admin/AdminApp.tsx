@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useAdminAuth } from '../hooks/useAdminAuth'
+import { LogoMark } from '../components/Logo'
+import { IconExternal } from '../components/icons'
 import { useAdminData } from './useAdminData'
 import { AdminLogin } from './AdminLogin'
 import { LanguagesSection } from './sections/LanguagesSection'
@@ -67,8 +69,8 @@ export default function AdminApp() {
   if (!isSupabaseConfigured) {
     return (
       <CenterCard>
-        <h1 className="text-xl font-bold text-slate-900">Supabase не настроен</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <h1 className="text-xl font-bold text-ink">Supabase не настроен</h1>
+        <p className="mt-2 text-sm text-ink-2">
           Задайте переменные <code>VITE_SUPABASE_URL</code> и{' '}
           <code>VITE_SUPABASE_ANON_KEY</code> в окружении (Netlify → Environment
           variables) и пересоберите проект.
@@ -89,15 +91,15 @@ export default function AdminApp() {
   if (!auth.isAdmin) {
     return (
       <CenterCard>
-        <h1 className="text-xl font-bold text-slate-900">Нет прав доступа</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <h1 className="text-xl font-bold text-ink">Нет прав доступа</h1>
+        <p className="mt-2 text-sm text-ink-2">
           Вы вошли как <b>{auth.session.user.email}</b>, но у этого аккаунта нет
           прав администратора. Добавьте пользователя в таблицу <code>admins</code>{' '}
           в Supabase.
         </p>
         <button
           onClick={() => auth.signOut()}
-          className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          className="mt-4 rounded-lg border border-line-strong px-4 py-2 text-sm text-ink-2 hover:bg-canvas"
         >
           Выйти
         </button>
@@ -129,24 +131,26 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <ConfirmProvider>
-    <div className="min-h-dvh bg-slate-50">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+    <div className="min-h-dvh bg-canvas">
+      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-lg font-bold text-white">
-              C
-            </span>
-            <div className="text-base font-semibold text-slate-900">
-              Convvy Admin
+            <LogoMark size={32} id="admin" />
+            <div className="text-base font-semibold tracking-tight text-ink">
+              Convvy <span className="font-normal text-ink-3">Admin</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/" className="text-sm text-slate-500 hover:text-slate-900">
-              ↗ Приложение
+            <a
+              href="/"
+              className="flex items-center gap-1.5 rounded-md text-sm text-ink-3 transition-colors duration-200 hover:text-accent"
+            >
+              <IconExternal size={15} />
+              Приложение
             </a>
             <button
               onClick={onSignOut}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink-2 hover:bg-canvas"
             >
               Выйти
             </button>
@@ -157,7 +161,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           <select
             value={tab}
             onChange={(e) => setTab(e.target.value as Tab)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-ink-2 outline-none focus:border-accent focus:ring-4 focus:ring-accent/12"
           >
             {TABS.map((tb) => (
               <option key={tb.id} value={tb.id}>
@@ -167,26 +171,13 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           </select>
         </div>
         {/* Десктоп: ряд вкладок */}
-        <nav className="mx-auto hidden max-w-4xl flex-wrap gap-x-1 px-4 sm:flex sm:px-6">
-          {TABS.map((tb) => (
-            <button
-              key={tb.id}
-              onClick={() => setTab(tb.id)}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${
-                tab === tb.id
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              {tb.label}
-            </button>
-          ))}
-        </nav>
+        <TabBar tab={tab} onSelect={setTab} />
+        <div aria-hidden className="h-px w-full bg-line" />
 
         {CONTENT_TABS.includes(tab) && data.languages.length > 0 && (
-          <div className="border-t border-slate-100 bg-slate-50/70">
+          <div className="bg-panel/60">
             <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-1.5 px-4 py-2 sm:px-6">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Язык заполнения
               </span>
               {data.languages.map((l) => (
@@ -196,8 +187,8 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                   title={l.name}
                   className={`rounded-md px-2.5 py-1 text-sm font-medium transition ${
                     activeLang === l.code
-                      ? 'bg-accent text-white'
-                      : 'border border-slate-200 bg-white text-slate-500 hover:text-slate-900'
+                      ? 'brand-fill text-white shadow-[0_2px_8px_-2px_rgba(87,65,248,0.5)]'
+                      : 'border border-line bg-white text-ink-3 hover:border-accent-line hover:text-accent'
                   }`}
                 >
                   {l.code.toUpperCase()}
@@ -209,7 +200,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-        {data.loading && <p className="text-sm text-slate-500">Загрузка данных…</p>}
+        {data.loading && <p className="text-sm text-ink-3">Загрузка данных…</p>}
         {data.error && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             Ошибка: {data.error}
@@ -306,7 +297,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
 function CenterCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh items-center justify-center px-5 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 text-center">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-white p-7 text-center">
         {children}
       </div>
     </div>
@@ -315,10 +306,88 @@ function CenterCard({ children }: { children: React.ReactNode }) {
 
 function BackLink() {
   return (
-    <p className="mt-4 text-center text-xs text-slate-400">
-      <a href="/" className="hover:text-slate-600">
+    <p className="mt-4 text-center text-xs text-ink-3">
+      <a href="/" className="hover:text-ink-2">
         ← Вернуться в приложение
       </a>
     </p>
+  )
+}
+
+/**
+ * Ряд вкладок админки.
+ *
+ * Разделов двенадцать, и в два рваных ряда они читались плохо. Одна
+ * прокручиваемая строка держит порядок, но обрезанная вкладка у края
+ * выглядит как ошибка вёрстки, а не как «есть ещё» — поэтому край
+ * затеняется ровно тогда, когда прокрутка действительно есть.
+ */
+function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
+  const ref = useRef<HTMLElement>(null)
+  const [edges, setEdges] = useState({ left: false, right: false })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () =>
+      setEdges({
+        left: el.scrollLeft > 4,
+        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
+      })
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [])
+
+  // Активная вкладка не должна оставаться за краем после перезагрузки.
+  useEffect(() => {
+    ref.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [tab])
+
+  return (
+    <div className="relative mx-auto hidden max-w-4xl sm:block">
+      <nav
+        ref={ref}
+        className="flex gap-x-1 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            onClick={() => onSelect(tb.id)}
+            aria-current={tab === tb.id ? 'page' : undefined}
+            className={`relative -mb-px shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+              tab === tb.id ? 'text-accent' : 'text-ink-3 hover:text-ink'
+            }`}
+          >
+            {tb.label}
+            {tab === tb.id && (
+              <span
+                aria-hidden
+                className="brand-rule absolute inset-x-2 bottom-0 h-[2px] rounded-full"
+              />
+            )}
+          </button>
+        ))}
+      </nav>
+      {edges.left && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white to-transparent"
+        />
+      )}
+      {edges.right && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white to-transparent"
+        />
+      )}
+    </div>
   )
 }

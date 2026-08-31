@@ -33,7 +33,7 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     element: (
-      <Suspense fallback={<div className="p-6 text-sm text-slate-500">Загрузка…</div>}>
+      <Suspense fallback={<div className="p-6 text-sm text-ink-3">Загрузка…</div>}>
         <AdminApp />
       </Suspense>
     ),

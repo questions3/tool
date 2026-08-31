@@ -34,7 +34,7 @@ export function LocalizedInput({
 
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
         {label} ·{' '}
         <span className="text-accent">
           {lang.toUpperCase()}
@@ -47,7 +47,7 @@ export function LocalizedInput({
           value={text}
           placeholder={placeholder}
           onChange={(e) => set(e.target.value)}
-          className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="w-full resize-y rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
       ) : (
         <input
@@ -55,7 +55,7 @@ export function LocalizedInput({
           value={text}
           placeholder={placeholder}
           onChange={(e) => set(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="w-full rounded-md border border-line-strong px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
       )}
     </label>

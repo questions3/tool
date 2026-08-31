@@ -25,23 +25,23 @@ export function AdminLogin({ signIn, error }: Props) {
             C
           </span>
           <div className="leading-tight">
-            <div className="text-lg font-bold text-slate-900">Convvy Admin</div>
-            <div className="text-[11px] text-slate-500">Панель управления контентом</div>
+            <div className="text-lg font-bold text-ink">Convvy Admin</div>
+            <div className="text-[11px] text-ink-3">Панель управления контентом</div>
           </div>
         </div>
 
         <form
           onSubmit={submit}
-          className="rounded-2xl border border-slate-200 bg-white p-7"
+          className="rounded-2xl border border-line bg-white p-7"
         >
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
             Вход администратора
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500">
+          <p className="mt-1.5 text-sm text-ink-3">
             Доступ через Supabase Auth
           </p>
 
-          <label className="mt-6 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <label className="mt-6 block text-xs font-semibold uppercase tracking-wider text-ink-3">
             Email
           </label>
           <input
@@ -49,10 +49,10 @@ export function AdminLogin({ signIn, error }: Props) {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="mt-2 w-full rounded-lg border border-line-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
 
-          <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <label className="mt-4 block text-xs font-semibold uppercase tracking-wider text-ink-3">
             Пароль
           </label>
           <input
@@ -60,7 +60,7 @@ export function AdminLogin({ signIn, error }: Props) {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="mt-2 w-full rounded-lg border border-line-strong px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
 
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -74,8 +74,8 @@ export function AdminLogin({ signIn, error }: Props) {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
-          <a href="/" className="hover:text-slate-600">
+        <p className="mt-4 text-center text-xs text-ink-3">
+          <a href="/" className="hover:text-ink-2">
             ← Вернуться в приложение
           </a>
         </p>

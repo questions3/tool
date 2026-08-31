@@ -1,3 +1,5 @@
+import { IconCheck } from './icons'
+
 interface Crumb {
   /** Готовая подпись шага (уже локализованная). */
   label: string
@@ -19,7 +21,7 @@ export function Stepper({ active, crumbs }: Props) {
   return (
     <nav
       aria-label="progress"
-      className="mb-7 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
+      className="mb-6 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
     >
       {crumbs.map((c, i) => {
         const step = i + 1
@@ -29,9 +31,14 @@ export function Stepper({ active, crumbs }: Props) {
         return (
           <span key={i} className="flex items-center gap-1.5">
             {i > 0 && (
-              <span aria-hidden className="text-slate-300">
-                ›
-              </span>
+              <svg
+                aria-hidden
+                width="14" height="14" viewBox="0 0 20 20" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+                strokeLinejoin="round" className="text-line-strong"
+              >
+                <path d="m8 5 5 5-5 5" />
+              </svg>
             )}
             <button
               disabled={!clickable}
@@ -39,22 +46,22 @@ export function Stepper({ active, crumbs }: Props) {
               aria-current={isActive ? 'step' : undefined}
               className={`flex items-center gap-2 rounded-full px-2 py-1 transition ${
                 isActive
-                  ? 'text-slate-900'
+                  ? 'text-ink'
                   : clickable
-                    ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                    : 'cursor-default text-slate-400'
+                    ? 'text-ink-3 hover:bg-panel hover:text-ink'
+                    : 'cursor-default text-ink-3/70'
               }`}
             >
               <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold transition-colors duration-200 ${
                   isActive
-                    ? 'bg-accent text-white'
+                    ? 'brand-fill text-white'
                     : done
                       ? 'bg-accent-soft text-accent'
-                      : 'border border-slate-300 text-slate-400'
+                      : 'border border-line-strong text-ink-3'
                 }`}
               >
-                {done ? '✓' : step}
+                {done ? <IconCheck size={12} /> : step}
               </span>
               <span className="whitespace-nowrap font-medium">{c.label}</span>
             </button>
