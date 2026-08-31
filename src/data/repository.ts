@@ -656,6 +656,73 @@ export async function setSuggestionStatus(
   if (error) throw error
 }
 
+/* ─────────────── Версии и откат ─────────────── */
+
+export interface VersionRow {
+  id: string
+  createdAt: string
+  /** Кто правил. null — правка пришла не из админки (импорт, SQL). */
+  changedBy: string | null
+  isDraft: boolean
+  langs: string[]
+  branches: number
+  /** Объём текста ответа: по нему видно, правка была мелкой или крупной. */
+  chars: number
+}
+
+/** История правок скрипта, новые сверху. Без самих текстов. */
+export async function fetchHistory(rebuttalId: string): Promise<VersionRow[]> {
+  const { data, error } = await db().rpc('rebuttal_history', {
+    p_rebuttal_id: rebuttalId,
+  })
+  if (error) throw error
+  return ((data ?? []) as {
+    id: string
+    created_at: string
+    changed_by: string | null
+    is_draft: boolean
+    langs: string[] | null
+    branches: number
+    chars: number
+  }[]).map((r) => ({
+    id: r.id,
+    createdAt: r.created_at,
+    changedBy: r.changed_by,
+    isDraft: r.is_draft,
+    langs: r.langs ?? [],
+    branches: Number(r.branches),
+    chars: Number(r.chars),
+  }))
+}
+
+/** Текст конкретной версии — грузим только когда админ её раскрыл. */
+export async function fetchVersionText(
+  versionId: string,
+  lang: string,
+): Promise<string> {
+  const { data, error } = await db()
+    .from('rebuttal_versions')
+    .select('answer')
+    .eq('id', versionId)
+    .maybeSingle()
+  if (error) throw error
+  const answer = (data as { answer?: Localized } | null)?.answer ?? {}
+  return answer[lang] ?? ''
+}
+
+/**
+ * Вернуть скрипт к выбранной версии.
+ *
+ * Откат идёт обычным UPDATE, поэтому текущее состояние тоже попадает в
+ * историю: откат можно отменить.
+ */
+export async function restoreVersion(versionId: string): Promise<void> {
+  const { error } = await db().rpc('restore_rebuttal_version', {
+    p_version_id: versionId,
+  })
+  if (error) throw error
+}
+
 /* ─────────────── ИИ-подсказки ─────────────── */
 
 export interface AiSuggestion {

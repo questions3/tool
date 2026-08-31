@@ -742,3 +742,36 @@ grant execute on function public.ai_prompt_context(uuid, uuid, text) to service_
 -- Контекст запиту одним викликом: заперечення, етап і три вже
 -- затверджені скрипти тією ж мовою як зразок тону.
 -- Тіло див. у міграції ai_suggestions_log.
+
+-- ============================================================
+-- 6i. ВЕРСІЇ СКРИПТІВ І ВІДКАТ (хвиля 3)
+-- ============================================================
+-- Раніше правка затирала старий текст назавжди. Знімок пише тригер на
+-- UPDATE, тому в історію потрапляє будь-яка правка — з адмінки, з
+-- імпорту чи напряму з SQL.
+create table if not exists public.rebuttal_versions (
+  id           uuid primary key default gen_random_uuid(),
+  rebuttal_id  uuid not null references public.rebuttals(id) on delete cascade,
+  answer       jsonb not null,
+  is_draft     boolean not null,
+  draft_langs  text[] not null default '{}',
+  branches     jsonb not null default '[]'::jsonb,
+  changed_by   text,
+  created_at   timestamptz not null default now()
+);
+create index if not exists rebuttal_versions_idx
+  on public.rebuttal_versions (rebuttal_id, created_at desc);
+
+alter table public.rebuttal_versions enable row level security;
+create policy "reports read versions" on public.rebuttal_versions
+  for select to authenticated using (public.can_read_reports());
+revoke all on public.rebuttal_versions from anon;
+revoke insert, update, delete, truncate on public.rebuttal_versions from authenticated;
+grant select on public.rebuttal_versions to authenticated;
+
+-- Тіла snapshot_rebuttal(), restore_rebuttal_version() і rebuttal_history()
+-- див. у міграції rebuttal_versions. Порожні правки в історію не пишуться;
+-- відкат іде звичайним UPDATE, тож поточний стан теж лягає в історію —
+-- відкат можна відкотити. Гілки замінюються цілком: часткове злиття дало б
+-- суміш двох версій. Відкат дозволено лише адміну, супервайзер історію
+-- читає, оператор не бачить її взагалі.

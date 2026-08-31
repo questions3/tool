@@ -16,7 +16,8 @@ import {
 import { hasLang, pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
 import { AiSuggest } from './AiSuggest'
-import { IconCheck, IconClose } from '../../components/icons'
+import { HistoryPanel } from './HistoryPanel'
+import { IconCheck, IconClose, IconPlus } from '../../components/icons'
 import { AnswerScreen } from '../../components/AnswerScreen'
 
 interface Props {
@@ -279,9 +280,10 @@ export function RebuttalsSection({
             <h3 className="font-semibold text-ink">Ветки what-if</h3>
             <button
               onClick={addBranch}
-              className="rounded-lg border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent-soft"
+              className="flex items-center gap-1.5 rounded-lg border border-accent px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent-soft"
             >
-              + Ветка
+              <IconPlus size={15} />
+            Ветка
             </button>
           </div>
 
@@ -332,6 +334,15 @@ export function RebuttalsSection({
               </p>
             )}
           </div>
+          <HistoryPanel
+            rebuttalId={form.id ?? null}
+            lang={lang}
+            onRestored={async () => {
+              await onChanged()
+              const fresh = await fetchRebuttal(objId, stageId)
+              setForm(toForm(fresh ?? undefined))
+            }}
+          />
         </div>
 
         <div className="sticky bottom-0 -mx-4 mt-2 border-t border-line bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
