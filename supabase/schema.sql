@@ -558,3 +558,74 @@ revoke execute on function public.is_agent_allowed(text) from authenticated;
 -- insert into public.admins (user_id, email)
 -- select id, email from auth.users where email = 'ВАШ_EMAIL'
 -- on conflict (user_id) do nothing;
+
+-- ============================================================
+-- 6f. ОЦІНКА СКРИПТА І АКТУАЛЬНІСТЬ (хвиля 2)
+-- ============================================================
+-- Голос і пропозиція розділені навмисно. Голос — один на оператора для
+-- пари «заперечення × етап × мова», і його можна перерішити: це власна
+-- думка, а не журнал. Пропозиція правки неізмінна: адмін лише розбирає.
+create table if not exists public.script_votes (
+  id           uuid primary key default gen_random_uuid(),
+  agent_email  text not null,
+  objection_id uuid not null references public.objections(id) on delete cascade,
+  stage_id     uuid not null references public.stages(id) on delete cascade,
+  lang         text not null,
+  vote         text not null check (vote in ('up', 'down')),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (agent_email, objection_id, stage_id, lang)
+);
+create index if not exists script_votes_script_idx
+  on public.script_votes (objection_id, stage_id, lang);
+alter table public.script_votes enable row level security;
+create policy "read own votes" on public.script_votes for select to authenticated
+  using (public.is_admin() or lower(agent_email) = public.current_email());
+create policy "insert own vote" on public.script_votes for insert to authenticated
+  with check (public.can_read_content()
+              and lower(agent_email) = public.current_email()
+              and public.current_email() <> '');
+create policy "update own vote" on public.script_votes for update to authenticated
+  using (lower(agent_email) = public.current_email() and public.current_email() <> '')
+  with check (lower(agent_email) = public.current_email());
+create policy "delete own vote" on public.script_votes for delete to authenticated
+  using (lower(agent_email) = public.current_email() and public.current_email() <> '');
+revoke all on public.script_votes from anon;
+grant select, insert, update, delete on public.script_votes to authenticated;
+
+create table if not exists public.script_suggestions (
+  id           uuid primary key default gen_random_uuid(),
+  agent_email  text,
+  objection_id uuid not null references public.objections(id) on delete cascade,
+  stage_id     uuid not null references public.stages(id) on delete cascade,
+  lang         text not null,
+  body         text not null,
+  status       text not null default 'new' check (status in ('new', 'done', 'dismissed')),
+  created_at   timestamptz not null default now()
+);
+create index if not exists script_suggestions_status_idx
+  on public.script_suggestions (status, created_at desc);
+alter table public.script_suggestions enable row level security;
+create policy "read suggestions" on public.script_suggestions for select to authenticated
+  using (public.is_admin() or lower(coalesce(agent_email, '')) = public.current_email());
+create policy "insert suggestion" on public.script_suggestions for insert to authenticated
+  with check (public.can_read_content());
+create policy "admin triages suggestion" on public.script_suggestions for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+revoke all on public.script_suggestions from anon;
+revoke update, delete, truncate, references, trigger
+  on public.script_suggestions from authenticated;
+grant select, insert on public.script_suggestions to authenticated;
+-- Текст пропозиції не править ніхто; адмін міняє лише статус, тому право
+-- update видано на одну колонку, а не на таблицю.
+grant update (status) on public.script_suggestions to authenticated;
+
+-- Актуальність: перевірка і редагування — різні події. Текст могли
+-- переписати, не звіряючи умови з тарифами, тому дати окремі, а
+-- «змінений після перевірки» показуємо як окремий сигнал.
+alter table public.rebuttals add column if not exists reviewed_at timestamptz;
+alter table public.rebuttals add column if not exists reviewed_by text;
+
+-- Функції зведень: feedback_summary(), stale_scripts(), mark_reviewed() —
+-- див. міграції script_feedback_and_freshness та
+-- feedback_and_freshness_summaries. Усі SECURITY INVOKER.

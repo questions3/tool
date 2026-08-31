@@ -18,6 +18,8 @@ interface Props {
    * связи с базой и годится для предпросмотра в админке.
    */
   note?: React.ReactNode
+  /** Оценка скрипта. Слот — по той же причине, что и заметка. */
+  feedback?: React.ReactNode
 }
 
 export function AnswerScreen({
@@ -28,6 +30,7 @@ export function AnswerScreen({
   outcome = null,
   onOutcome,
   note,
+  feedback,
 }: Props) {
   // Языковой фильтр: показываем только ветки, переведённые на выбранный язык.
   const branches = rebuttal.branches.filter((b) => hasLang(b.response, lang))
@@ -94,6 +97,8 @@ export function AnswerScreen({
       {onOutcome && (
         <OutcomeBar lang={lang} outcome={outcome} onPick={onOutcome} />
       )}
+
+      {feedback}
     </div>
   )
 }

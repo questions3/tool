@@ -3,6 +3,7 @@ import type { Lang, Localized, Rebuttal, SectionId } from './types'
 import { useAuth } from './hooks/useAuth'
 import { useContent } from './hooks/useContent'
 import { useFavorites } from './hooks/useFavorites'
+import { useFeedback } from './hooks/useFeedback'
 import { useNote } from './hooks/useNote'
 import { useOutcome } from './hooks/useOutcome'
 import { useTags } from './hooks/useTags'
@@ -15,6 +16,7 @@ import { Header } from './components/Header'
 import { Stepper } from './components/Stepper'
 import { SelectScreen } from './components/SelectScreen'
 import { AnswerScreen } from './components/AnswerScreen'
+import { FeedbackBar } from './components/FeedbackBar'
 import { NotePanel } from './components/NotePanel'
 import { SearchOverlay } from './components/SearchOverlay'
 import { WhatsNew } from './components/WhatsNew'
@@ -486,6 +488,13 @@ function AnswerWrap({
   const [error, setError] = useState(false)
 
   const note = useNote({ agentEmail, objectionId, stageId, enabled: trackViews })
+  const feedback = useFeedback({
+    agentEmail,
+    objectionId,
+    stageId,
+    lang,
+    enabled: trackViews,
+  })
 
   // Отметка исхода разговора — тот же контекст, что и у статистики открытий.
   const { picked, pick: markOutcome } = useOutcome({
@@ -554,6 +563,18 @@ function AnswerWrap({
       outcome={picked}
       // Без базы и без входа отметку писать некуда — прячем строку целиком.
       onOutcome={trackViews ? markOutcome : undefined}
+      feedback={
+        feedback.available ? (
+          <FeedbackBar
+            lang={lang}
+            vote={feedback.vote}
+            sent={feedback.sent}
+            busy={feedback.busy}
+            onVote={(v) => void feedback.toggle(v)}
+            onSuggest={(b) => void feedback.suggest(b)}
+          />
+        ) : null
+      }
     />
   )
 }

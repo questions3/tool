@@ -489,6 +489,226 @@ export async function setObjectionTags(
   if (error) throw error
 }
 
+/* ─────────────── Оценка скрипта ─────────────── */
+
+export type Vote = 'up' | 'down'
+
+/** Свой голос по скрипту; null — оператор ещё не голосовал. */
+export async function fetchMyVote(
+  agentEmail: string,
+  objectionId: string,
+  stageId: string,
+  lang: string,
+): Promise<Vote | null> {
+  const { data, error } = await db()
+    .from('script_votes')
+    .select('vote')
+    .eq('agent_email', agentEmail.toLowerCase())
+    .eq('objection_id', objectionId)
+    .eq('stage_id', stageId)
+    .eq('lang', lang)
+    .maybeSingle()
+  if (error) throw error
+  return (data as { vote: Vote } | null)?.vote ?? null
+}
+
+/**
+ * Поставить или снять голос. Голос один на оператора и переголосовывается:
+ * это его мнение, а не журнал, и менять своё мнение — нормально. Чужие
+ * голоса при этом недоступны, за этим следит RLS.
+ */
+export async function saveVote(input: {
+  agentEmail: string
+  objectionId: string
+  stageId: string
+  lang: string
+  vote: Vote | null
+}): Promise<void> {
+  const email = input.agentEmail.toLowerCase()
+  const where = {
+    agent_email: email,
+    objection_id: input.objectionId,
+    stage_id: input.stageId,
+    lang: input.lang,
+  }
+  if (!input.vote) {
+    const { error } = await db()
+      .from('script_votes')
+      .delete()
+      .match(where)
+    if (error) throw error
+    return
+  }
+  const { error } = await db()
+    .from('script_votes')
+    .upsert(
+      { ...where, vote: input.vote, updated_at: new Date().toISOString() },
+      { onConflict: 'agent_email,objection_id,stage_id,lang' },
+    )
+  if (error) throw error
+}
+
+/** Предложить правку текста. Запись неизменяемая: админ только меняет статус. */
+export async function sendSuggestion(input: {
+  agentEmail: string | null
+  objectionId: string
+  stageId: string
+  lang: string
+  body: string
+}): Promise<void> {
+  const body = input.body.trim()
+  if (!body) return
+  const { error } = await db().from('script_suggestions').insert({
+    agent_email: input.agentEmail?.toLowerCase() ?? null,
+    objection_id: input.objectionId,
+    stage_id: input.stageId,
+    lang: input.lang,
+    body,
+  })
+  if (error) throw error
+}
+
+export interface FeedbackRow {
+  objectionId: string
+  stageId: string
+  label: Localized
+  stageLabel: Localized
+  up: number
+  down: number
+  suggestions: number
+}
+
+/** Сводка оценок по скриптам за период. */
+export async function fetchFeedbackSummary(days = 90): Promise<FeedbackRow[]> {
+  const { data, error } = await db().rpc('feedback_summary', { p_days: days })
+  if (error) throw error
+  return ((data ?? []) as {
+    objection_id: string
+    stage_id: string
+    label: Localized
+    stage_label: Localized
+    up: number
+    down: number
+    suggestions: number
+  }[]).map((r) => ({
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    label: r.label ?? {},
+    stageLabel: r.stage_label ?? {},
+    up: Number(r.up),
+    down: Number(r.down),
+    suggestions: Number(r.suggestions),
+  }))
+}
+
+export type SuggestionStatus = 'new' | 'done' | 'dismissed'
+
+export interface SuggestionRow {
+  id: string
+  agentEmail: string | null
+  objectionId: string
+  stageId: string
+  lang: string
+  body: string
+  status: SuggestionStatus
+  createdAt: string
+}
+
+export async function fetchSuggestions(
+  status: SuggestionStatus = 'new',
+): Promise<SuggestionRow[]> {
+  const { data, error } = await db()
+    .from('script_suggestions')
+    .select('*')
+    .eq('status', status)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw error
+  return ((data ?? []) as {
+    id: string
+    agent_email: string | null
+    objection_id: string
+    stage_id: string
+    lang: string
+    body: string
+    status: SuggestionStatus
+    created_at: string
+  }[]).map((r) => ({
+    id: r.id,
+    agentEmail: r.agent_email,
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    lang: r.lang,
+    body: r.body,
+    status: r.status,
+    createdAt: r.created_at,
+  }))
+}
+
+export async function setSuggestionStatus(
+  id: string,
+  status: SuggestionStatus,
+): Promise<void> {
+  const { error } = await db()
+    .from('script_suggestions')
+    .update({ status })
+    .eq('id', id)
+  if (error) throw error
+}
+
+/* ─────────────── Актуальность ─────────────── */
+
+export interface StaleRow {
+  rebuttalId: string
+  objectionId: string
+  stageId: string
+  label: Localized
+  stageLabel: Localized
+  langs: string[]
+  updatedAt: string
+  reviewedAt: string | null
+  reviewedBy: string | null
+  /** Текст правили после последней проверки — повод свериться заново. */
+  changedAfter: boolean
+  daysSince: number | null
+}
+
+export async function fetchStaleScripts(days = 90): Promise<StaleRow[]> {
+  const { data, error } = await db().rpc('stale_scripts', { p_days: days })
+  if (error) throw error
+  return ((data ?? []) as {
+    rebuttal_id: string
+    objection_id: string
+    stage_id: string
+    label: Localized
+    stage_label: Localized
+    langs: string[] | null
+    updated_at: string
+    reviewed_at: string | null
+    reviewed_by: string | null
+    changed_after: boolean
+    days_since: number | null
+  }[]).map((r) => ({
+    rebuttalId: r.rebuttal_id,
+    objectionId: r.objection_id,
+    stageId: r.stage_id,
+    label: r.label ?? {},
+    stageLabel: r.stage_label ?? {},
+    langs: r.langs ?? [],
+    updatedAt: r.updated_at,
+    reviewedAt: r.reviewed_at,
+    reviewedBy: r.reviewed_by,
+    changedAfter: r.changed_after,
+    daysSince: r.days_since === null ? null : Number(r.days_since),
+  }))
+}
+
+/** Отметить, что скрипт сверили с текущими условиями. */
+export async function markReviewed(rebuttalId: string): Promise<void> {
+  const { error } = await db().rpc('mark_reviewed', { p_rebuttal_id: rebuttalId })
+  if (error) throw error
+}
+
 /* ─────────────── Копия на другой язык ─────────────── */
 
 /**

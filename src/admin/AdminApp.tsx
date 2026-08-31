@@ -11,6 +11,8 @@ import { AgentsSection } from './sections/AgentsSection'
 import { EntriesSection } from './sections/EntriesSection'
 import { AnalyticsSection } from './sections/AnalyticsSection'
 import { TagsSection } from './sections/TagsSection'
+import { FeedbackSection } from './sections/FeedbackSection'
+import { FreshnessSection } from './sections/FreshnessSection'
 import { ImportSection } from './sections/ImportSection'
 import { ConfirmProvider } from './components/Confirm'
 
@@ -23,6 +25,8 @@ type Tab =
   | 'service'
   | 'market'
   | 'tags'
+  | 'feedback'
+  | 'freshness'
   | 'agents'
   | 'analytics'
   | 'import'
@@ -36,6 +40,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'service', label: 'Сервисы' },
   { id: 'market', label: 'Рынок' },
   { id: 'tags', label: 'Теги' },
+  { id: 'feedback', label: 'Обратная связь' },
+  { id: 'freshness', label: 'Актуальность' },
   { id: 'agents', label: 'Агенты' },
   { id: 'analytics', label: 'Аналитика' },
   { id: 'import', label: 'Импорт' },
@@ -277,6 +283,8 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                 objections={data.objections}
               />
             )}
+            {tab === 'feedback' && <FeedbackSection lang={activeLang} />}
+            {tab === 'freshness' && <FreshnessSection lang={activeLang} />}
             {tab === 'analytics' && <AnalyticsSection lang={activeLang} />}
             {tab === 'import' && (
               <ImportSection

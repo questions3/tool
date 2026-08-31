@@ -474,6 +474,44 @@ export const ui = {
     es: '1–9 elegir tarjeta · / buscar · Esc atrás · ? ayuda',
   },
 
+  // Оценка скрипта
+  voteHelpful: {
+    ru: 'Скрипт помог',
+    pl: 'Skrypt pomógł',
+    en: 'Script helped',
+    de: 'Skript hat geholfen',
+    es: 'El guion ayudó',
+  },
+  voteNotHelpful: {
+    ru: 'Скрипт не помог',
+    pl: 'Skrypt nie pomógł',
+    en: "Script didn't help",
+    de: 'Skript half nicht',
+    es: 'El guion no ayudó',
+  },
+  suggestEdit: {
+    ru: 'Предложить правку',
+    pl: 'Zaproponuj poprawkę',
+    en: 'Suggest an edit',
+    de: 'Änderung vorschlagen',
+    es: 'Sugerir un cambio',
+  },
+  suggestPlaceholder: {
+    ru: 'Что бы вы изменили в этом скрипте',
+    pl: 'Co byś zmienił w tym skrypcie',
+    en: 'What would you change in this script',
+    de: 'Was würden Sie an diesem Skript ändern',
+    es: 'Qué cambiarías en este guion',
+  },
+  suggestSent: {
+    ru: 'Спасибо, передали администратору',
+    pl: 'Dzięki, przekazaliśmy administratorowi',
+    en: 'Thanks, sent to the administrator',
+    de: 'Danke, an die Administration weitergeleitet',
+    es: 'Gracias, enviado al administrador',
+  },
+  send: { ru: 'Отправить', pl: 'Wyślij', en: 'Send', de: 'Senden', es: 'Enviar' },
+
   // Loading / errors
   loading: {
     ru: 'Загрузка…',
