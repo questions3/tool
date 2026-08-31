@@ -727,8 +727,17 @@ returns integer language sql stable security definer set search_path = public as
   where admin_id = p_admin and error is null
     and created_at > now() - interval '1 hour';
 $$;
-revoke execute on function public.ai_usage_last_hour(uuid) from public;
+-- УВАГА: створення функції видає EXECUTE ролям anon і authenticated за
+-- замовчуванням, і `revoke from public` цього не знімає. Права треба
+-- знімати поіменно, інакше SECURITY DEFINER функція доступна кожному
+-- залогіненому через /rest/v1/rpc.
+revoke all on function public.ai_usage_last_hour(uuid) from public, anon, authenticated;
 grant execute on function public.ai_usage_last_hour(uuid) to service_role;
+
+-- ai_prompt_context повертає ТЕКСТИ затверджених скриптів — саме те, що
+-- в застосунку заборонено копіювати. Викликає її лише edge-функція.
+revoke all on function public.ai_prompt_context(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.ai_prompt_context(uuid, uuid, text) to service_role;
 
 -- Контекст запиту одним викликом: заперечення, етап і три вже
 -- затверджені скрипти тією ж мовою як зразок тону.
