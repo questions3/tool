@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code (localnye nastroyki mashiny)
+.claude/settings.local.json
