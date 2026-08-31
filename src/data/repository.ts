@@ -305,6 +305,24 @@ export async function saveObjection(input: TermInput): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Создать возражение и вернуть его id.
+ *
+ * Отдельно от saveObjection(), потому что импорту нужен id только что
+ * созданной записи, чтобы сразу привязать к ней скрипт и ветки.
+ */
+export async function createObjectionReturningId(
+  input: TermInput,
+): Promise<string> {
+  const { data, error } = await db()
+    .from('objections')
+    .insert(termRow(input))
+    .select('id')
+    .single()
+  if (error) throw error
+  return (data as { id: string }).id
+}
+
 export async function deleteObjection(id: string): Promise<void> {
   const { error } = await db().from('objections').delete().eq('id', id)
   if (error) throw error

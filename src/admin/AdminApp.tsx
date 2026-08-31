@@ -10,6 +10,7 @@ import { RebuttalsSection } from './sections/RebuttalsSection'
 import { AgentsSection } from './sections/AgentsSection'
 import { EntriesSection } from './sections/EntriesSection'
 import { AnalyticsSection } from './sections/AnalyticsSection'
+import { ImportSection } from './sections/ImportSection'
 import { ConfirmProvider } from './components/Confirm'
 
 type Tab =
@@ -22,6 +23,7 @@ type Tab =
   | 'market'
   | 'agents'
   | 'analytics'
+  | 'import'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'languages', label: 'Языки' },
@@ -33,10 +35,12 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'market', label: 'Рынок' },
   { id: 'agents', label: 'Агенты' },
   { id: 'analytics', label: 'Аналитика' },
+  { id: 'import', label: 'Импорт' },
 ]
 
 /** Вкладки с локализованным контентом — для них показываем «Язык заполнения». */
 const CONTENT_TABS: Tab[] = [
+  'import',
   'objections',
   'stages',
   'rebuttals',
@@ -263,6 +267,15 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               />
             )}
             {tab === 'analytics' && <AnalyticsSection lang={activeLang} />}
+            {tab === 'import' && (
+              <ImportSection
+                lang={activeLang}
+                languages={data.languages}
+                objections={data.objections}
+                stages={data.stages}
+                onChanged={data.reload}
+              />
+            )}
           </>
         )}
       </main>
