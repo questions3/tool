@@ -15,6 +15,7 @@ import {
 } from '../../data/repository'
 import { hasLang, pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
+import { AiSuggest } from './AiSuggest'
 import { IconCheck, IconClose } from '../../components/icons'
 import { AnswerScreen } from '../../components/AnswerScreen'
 
@@ -226,6 +227,15 @@ export function RebuttalsSection({
       </div>
 
       <div className="mt-4 space-y-4">
+        <AiSuggest
+          objectionId={objId}
+          stageId={stageId}
+          lang={lang}
+          onUse={(text) =>
+            setForm((f) => ({ ...f, answer: { ...f.answer, [lang]: text } }))
+          }
+        />
+
         <LocalizedInput
           label="Базовый ответ (answer)"
           value={form.answer}

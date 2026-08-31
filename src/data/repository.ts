@@ -656,6 +656,58 @@ export async function setSuggestionStatus(
   if (error) throw error
 }
 
+/* ─────────────── ИИ-подсказки ─────────────── */
+
+export interface AiSuggestion {
+  variants: string[]
+  model: string
+  /** Сколько генераций израсходовано за час и каков лимит. */
+  used: number
+  limit: number
+}
+
+/**
+ * Черновики ответа на возражение.
+ *
+ * Ходит в edge-функцию, а не к провайдеру напрямую: ключ модели живёт на
+ * сервере и в браузерный бандл не попадает. Функция ничего не публикует —
+ * решает человек.
+ */
+export async function suggestRebuttals(input: {
+  objectionId: string
+  stageId: string
+  lang: string
+}): Promise<AiSuggestion> {
+  const { data, error } = await db().functions.invoke('suggest-rebuttals', {
+    body: input,
+  })
+  if (error) {
+    // Текст ошибки лежит в теле ответа: без него админ видел бы только
+    // «non-2xx» и гадал, дело в ключе, в модели или в правах.
+    const detail = await readFunctionError(error)
+    throw new Error(detail ?? error.message)
+  }
+  const payload = data as Partial<AiSuggestion> & { error?: string }
+  if (payload?.error) throw new Error(payload.error)
+  return {
+    variants: payload?.variants ?? [],
+    model: payload?.model ?? '',
+    used: payload?.used ?? 0,
+    limit: payload?.limit ?? 0,
+  }
+}
+
+async function readFunctionError(error: unknown): Promise<string | null> {
+  const res = (error as { context?: Response })?.context
+  if (!res || typeof res.json !== 'function') return null
+  try {
+    const body = (await res.json()) as { error?: string }
+    return body?.error ?? null
+  } catch {
+    return null
+  }
+}
+
 /* ─────────────── Актуальность ─────────────── */
 
 export interface StaleRow {

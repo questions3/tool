@@ -687,3 +687,49 @@ create policy "read own admin row" on public.admins
   for select to authenticated using (user_id = auth.uid());
 revoke all on public.admins from anon;
 grant select, insert, update, delete on public.admins to authenticated;
+
+-- ============================================================
+-- 6h. ШІ-ПІДКАЗКИ ВАРІАНТІВ ВІДПОВІДІ
+-- ============================================================
+-- Інструмент наповнення, а не суфлер у дзвінку: оператор нічого
+-- згенерованого не бачить, поки адмін не збереже текст звичайним чином.
+-- Ключ моделі живе в edge-функції suggest-rebuttals, у браузерний бандл
+-- не потрапляє. Журнал потрібен для контролю витрат і аудиту.
+create table if not exists public.ai_suggestions (
+  id            uuid primary key default gen_random_uuid(),
+  admin_email   text,
+  admin_id      uuid,
+  objection_id  uuid references public.objections(id) on delete set null,
+  stage_id      uuid references public.stages(id) on delete set null,
+  lang          text not null,
+  model         text not null,
+  variants      integer not null default 0,
+  tokens_in     integer,
+  tokens_out    integer,
+  error         text,
+  created_at    timestamptz not null default now()
+);
+create index if not exists ai_suggestions_created_idx on public.ai_suggestions (created_at desc);
+create index if not exists ai_suggestions_admin_idx on public.ai_suggestions (admin_id, created_at desc);
+
+alter table public.ai_suggestions enable row level security;
+create policy "reports read ai_suggestions" on public.ai_suggestions
+  for select to authenticated using (public.can_read_reports());
+revoke all on public.ai_suggestions from anon;
+revoke insert, update, delete, truncate on public.ai_suggestions from authenticated;
+grant select on public.ai_suggestions to authenticated;
+-- Пише лише edge-функція під сервісною роллю.
+
+-- Запобіжник від випадкового циклу запитів: генерації коштують грошей.
+create or replace function public.ai_usage_last_hour(p_admin uuid)
+returns integer language sql stable security definer set search_path = public as $$
+  select count(*)::int from public.ai_suggestions
+  where admin_id = p_admin and error is null
+    and created_at > now() - interval '1 hour';
+$$;
+revoke execute on function public.ai_usage_last_hour(uuid) from public;
+grant execute on function public.ai_usage_last_hour(uuid) to service_role;
+
+-- Контекст запиту одним викликом: заперечення, етап і три вже
+-- затверджені скрипти тією ж мовою як зразок тону.
+-- Тіло див. у міграції ai_suggestions_log.
