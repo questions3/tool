@@ -137,6 +137,77 @@ export async function reorderSwap(
   if (error) throw error
 }
 
+/**
+ * Записать факт открытия скрипта. Пишется «в фоне»: телеметрия не должна
+ * ломать работу оператора, поэтому все ошибки глушатся вызывающей стороной.
+ */
+export async function logScriptView(input: {
+  objectionId: string
+  stageId: string
+  lang: string
+  agentEmail?: string | null
+}): Promise<void> {
+  const { error } = await db().from('script_views').insert({
+    objection_id: input.objectionId,
+    stage_id: input.stageId,
+    lang: input.lang,
+    agent_email: input.agentEmail ?? null,
+  })
+  if (error) throw error
+}
+
+/** Записать вход оператора в журнал. Тоже «в фоне». */
+export async function logAgentLogin(email: string): Promise<void> {
+  const { error } = await db().from('agent_logins').insert({ email })
+  if (error) throw error
+}
+
+/** Строка сводки использования для админки. */
+export interface UsageRow {
+  objectionId: string
+  label: Localized
+  views: number
+  lastViewed: string
+}
+
+/** Топ возражений по числу открытий за последние `days` дней. */
+export async function fetchUsageSummary(days = 30): Promise<UsageRow[]> {
+  const { data, error } = await db().rpc('usage_summary', { p_days: days })
+  if (error) throw error
+  const rows = (data ?? []) as {
+    objection_id: string
+    label: Localized
+    views: number
+    last_viewed: string
+  }[]
+  return rows.map((r) => ({
+    objectionId: r.objection_id,
+    label: r.label ?? {},
+    views: Number(r.views),
+    lastViewed: r.last_viewed,
+  }))
+}
+
+/** Запись журнала входов. */
+export interface LoginRow {
+  id: string
+  email: string
+  loggedAt: string
+}
+
+/** Последние входы операторов (только для админа). */
+export async function fetchAgentLogins(limit = 100): Promise<LoginRow[]> {
+  const { data, error } = await db()
+    .from('agent_logins')
+    .select('id,email,logged_at')
+    .order('logged_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return ((data ?? []) as { id: string; email: string; logged_at: string }[]).map(
+    (r) => ({ id: r.id, email: r.email, loggedAt: r.logged_at }),
+  )
+}
+
 /** Пара «возражение × этап», для которой есть опубликованный скрипт. */
 export interface RebuttalIndexEntry {
   objectionId: string

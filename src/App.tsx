@@ -5,6 +5,7 @@ import { useContent } from './hooks/useContent'
 import { useFavorites } from './hooks/useFavorites'
 import { hasLang, pick, t, type UiKey } from './i18n/ui'
 import { fallbackLanguages } from './data/content'
+import { logScriptView } from './data/repository'
 import { withTimeout } from './lib/withTimeout'
 import { Login } from './components/Login'
 import { Header } from './components/Header'
@@ -125,6 +126,8 @@ export default function App() {
             setObjectionId={setObjectionId}
             setStageId={setStageId}
             loadRebuttal={loadRebuttal}
+            agentEmail={session?.user?.email ?? null}
+            trackViews={configured && !!session}
           />
         )}
 
@@ -151,6 +154,8 @@ function ObjectionsFlow({
   setObjectionId,
   setStageId,
   loadRebuttal,
+  agentEmail,
+  trackViews,
 }: {
   lang: Lang
   content: ReturnType<typeof useContent>
@@ -159,6 +164,9 @@ function ObjectionsFlow({
   setObjectionId: (id: string | null) => void
   setStageId: (id: string | null) => void
   loadRebuttal: (o: string, s: string) => Promise<Rebuttal | null>
+  agentEmail: string | null
+  /** В фолбэк-режиме (без Supabase) писать статистику некуда. */
+  trackViews: boolean
 }) {
   const { objections, stages, rebuttalIndex } = content
   const { isFavorite, toggleFavorite } = useFavorites()
@@ -263,6 +271,8 @@ function ObjectionsFlow({
               objectionLabel={pick(objection.label, lang)}
               stageLabel={pick(stage.label, lang)}
               loadRebuttal={loadRebuttal}
+              agentEmail={agentEmail}
+              trackViews={trackViews}
             />
           )}
         </>
@@ -313,6 +323,8 @@ function AnswerWrap({
   objectionLabel,
   stageLabel,
   loadRebuttal,
+  agentEmail,
+  trackViews,
 }: {
   lang: Lang
   objectionId: string
@@ -320,12 +332,24 @@ function AnswerWrap({
   objectionLabel: string
   stageLabel: string
   loadRebuttal: (o: string, s: string) => Promise<Rebuttal | null>
+  agentEmail: string | null
+  trackViews: boolean
 }) {
   const [rebuttal, setRebuttal] = useState<Rebuttal | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
   const key = useMemo(() => `${objectionId}:${stageId}`, [objectionId, stageId])
+
+  // Статистика открытий: одна запись на пару «возражение × этап × язык».
+  // Пишем «в фоне» и молча глотаем ошибку — телеметрия не должна мешать
+  // оператору работать во время звонка.
+  useEffect(() => {
+    if (!trackViews) return
+    void logScriptView({ objectionId, stageId, lang, agentEmail }).catch(
+      () => {},
+    )
+  }, [objectionId, stageId, lang, agentEmail, trackViews])
 
   useEffect(() => {
     let cancelled = false

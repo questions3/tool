@@ -9,6 +9,7 @@ import { StagesSection } from './sections/StagesSection'
 import { RebuttalsSection } from './sections/RebuttalsSection'
 import { AgentsSection } from './sections/AgentsSection'
 import { EntriesSection } from './sections/EntriesSection'
+import { AnalyticsSection } from './sections/AnalyticsSection'
 import { ConfirmProvider } from './components/Confirm'
 
 type Tab =
@@ -20,6 +21,7 @@ type Tab =
   | 'service'
   | 'market'
   | 'agents'
+  | 'analytics'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'languages', label: 'Языки' },
@@ -30,6 +32,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'service', label: 'Сервисы' },
   { id: 'market', label: 'Рынок' },
   { id: 'agents', label: 'Агенты' },
+  { id: 'analytics', label: 'Аналитика' },
 ]
 
 /** Вкладки с локализованным контентом — для них показываем «Язык заполнения». */
@@ -259,6 +262,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                 onChanged={data.reload}
               />
             )}
+            {tab === 'analytics' && <AnalyticsSection lang={activeLang} />}
           </>
         )}
       </main>

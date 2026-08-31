@@ -194,6 +194,61 @@ revoke execute on function public.rebuttal_index() from public;
 grant  execute on function public.rebuttal_index() to anon, authenticated;
 
 -- ============================================================
+-- 6d. АНАЛИТИКА: просмотры скриптов и журнал входов
+-- ============================================================
+-- Обе таблицы пишет агентское приложение, читает только админ.
+-- Записи не обновляются и не удаляются — журнал только дополняется.
+
+create table if not exists public.script_views (
+  id            uuid primary key default gen_random_uuid(),
+  objection_id  uuid references public.objections(id) on delete cascade,
+  stage_id      uuid references public.stages(id) on delete set null,
+  lang          text not null,
+  agent_email   text,
+  viewed_at     timestamptz not null default now()
+);
+create index if not exists script_views_viewed_at_idx on public.script_views (viewed_at desc);
+create index if not exists script_views_objection_idx on public.script_views (objection_id);
+
+create table if not exists public.agent_logins (
+  id         uuid primary key default gen_random_uuid(),
+  email      text not null,
+  logged_at  timestamptz not null default now()
+);
+create index if not exists agent_logins_logged_at_idx on public.agent_logins (logged_at desc);
+
+alter table public.script_views enable row level security;
+alter table public.agent_logins enable row level security;
+
+create policy "insert script_views" on public.script_views
+  for insert to authenticated with check (public.can_read_content());
+create policy "admin reads script_views" on public.script_views
+  for select to authenticated using (public.is_admin());
+create policy "insert agent_logins" on public.agent_logins
+  for insert to authenticated with check (public.can_read_content());
+create policy "admin reads agent_logins" on public.agent_logins
+  for select to authenticated using (public.is_admin());
+
+revoke all on public.script_views from anon;
+revoke all on public.agent_logins from anon;
+grant insert, select on public.script_views to authenticated;
+grant insert, select on public.agent_logins to authenticated;
+
+-- Топ возражений по открытиям: агрегат, без выгрузки сырых строк.
+create or replace function public.usage_summary(p_days int default 30)
+returns table (objection_id uuid, label jsonb, views bigint, last_viewed timestamptz)
+language sql stable security invoker set search_path = public as $$
+  select v.objection_id, o.label, count(*) as views, max(v.viewed_at) as last_viewed
+  from public.script_views v
+  join public.objections o on o.id = v.objection_id
+  where v.viewed_at > now() - make_interval(days => greatest(p_days, 1))
+  group by v.objection_id, o.label
+  order by count(*) desc;
+$$;
+revoke execute on function public.usage_summary(int) from public;
+grant execute on function public.usage_summary(int) to authenticated;
+
+-- ============================================================
 -- 6c. АТОМАРНЫЙ РЕОРДЕР (стрелки ▲/▼ в админке)
 -- Меняет местами sort_order двух строк в одной транзакции, чтобы
 -- частичный сбой не оставил порядок в неконсистентном состоянии.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAgentLogin } from '../data/repository'
 
 /**
  * Авторизация агента по одноразовому коду (OTP) на email.
@@ -111,6 +112,9 @@ export function useAuth(): AuthState {
           type: 'email',
         })
         if (error) return { ok: false, reason: 'invalid_code' }
+        // Журнал входов для администратора. Пишем «в фоне»: если запись
+        // не прошла, вход всё равно состоялся и оператор не должен ждать.
+        void logAgentLogin(email.trim().toLowerCase()).catch(() => {})
         return { ok: true }
       } catch {
         return { ok: false, reason: 'invalid_code' }
