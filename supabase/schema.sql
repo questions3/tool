@@ -629,3 +629,61 @@ alter table public.rebuttals add column if not exists reviewed_by text;
 -- Функції зведень: feedback_summary(), stale_scripts(), mark_reviewed() —
 -- див. міграції script_feedback_and_freshness та
 -- feedback_and_freshness_summaries. Усі SECURITY INVOKER.
+
+-- ============================================================
+-- 6g. РОЛЬ СУПЕРВАЙЗЕРА (хвиля 2)
+-- ============================================================
+-- Керівнику групи потрібні цифри, але не потрібна кнопка «видалити».
+-- Роль лежить у тій самій таблиці admins: окрема таблиця дала б другий
+-- шлях входу в адмінку, а це зайва поверхня.
+alter table public.admins add column if not exists role text not null default 'admin';
+alter table public.admins drop constraint if exists admins_role_check;
+alter table public.admins add constraint admins_role_check
+  check (role in ('admin', 'supervisor'));
+
+-- is_admin() лишається «повний доступ»: усі політики запису спираються на
+-- неї, і супервайзер під неї не підпадає.
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.admins a where a.user_id = auth.uid() and a.role = 'admin'
+  );
+$$;
+revoke execute on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
+
+-- Хто вправі дивитися звіти: адмін і супервайзер.
+create or replace function public.can_read_reports()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins a where a.user_id = auth.uid());
+$$;
+revoke execute on function public.can_read_reports() from public;
+grant execute on function public.can_read_reports() to anon, authenticated;
+
+-- Роль поточного користувача для інтерфейсу.
+create or replace function public.my_role()
+returns text language sql stable security definer set search_path = public as $$
+  select a.role from public.admins a where a.user_id = auth.uid();
+$$;
+revoke execute on function public.my_role() from public;
+grant execute on function public.my_role() to authenticated;
+
+-- Журнали й відгуки читає той, хто вправі дивитися звіти. Розбирати
+-- пропозиції та відмічати перевірку лишається правом адміна: політики
+-- update і mark_reviewed() спираються на is_admin().
+create policy "reports read script_views" on public.script_views
+  for select to authenticated using (public.can_read_reports());
+create policy "reports read agent_logins" on public.agent_logins
+  for select to authenticated using (public.can_read_reports());
+create policy "reports read script_outcomes" on public.script_outcomes
+  for select to authenticated using (public.can_read_reports());
+
+-- Сама таблиця admins під RLS: свій рядок бачить кожен (потрібно клієнту
+-- для визначення ролі), керує списком лише адмін.
+alter table public.admins enable row level security;
+create policy "admin manage admins" on public.admins
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "read own admin row" on public.admins
+  for select to authenticated using (user_id = auth.uid());
+revoke all on public.admins from anon;
+grant select, insert, update, delete on public.admins to authenticated;

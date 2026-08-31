@@ -15,24 +15,34 @@ export interface AdminAuthState {
   loading: boolean
   session: Session | null
   isAdmin: boolean
+  /** Роль в админке: полный доступ, только отчёты или ничего. */
+  role: AdminRole | null
   error: string | null
   signIn: (email: string, password: string) => Promise<boolean>
   signOut: () => Promise<void>
 }
 
-async function checkIsAdmin(userId: string): Promise<boolean> {
-  if (!supabase) return false
+/**
+ * Роль в админке. `admin` — полный доступ, `supervisor` — только отчёты,
+ * null — доступа нет. Настоящий запрет живёт в политиках БД; здесь роль
+ * нужна лишь чтобы не показывать вкладки, которые всё равно откажут.
+ */
+export type AdminRole = 'admin' | 'supervisor'
+
+async function fetchRole(userId: string): Promise<AdminRole | null> {
+  if (!supabase) return null
   try {
     const { data, error } = await supabase
       .from('admins')
-      .select('user_id')
+      .select('role')
       .eq('user_id', userId)
       .maybeSingle()
-    if (error) return false
-    return Boolean(data)
+    if (error) return null
+    const role = (data as { role?: string } | null)?.role
+    return role === 'admin' || role === 'supervisor' ? role : null
   } catch {
     // Сетевой сбой/таймаут не должен подвесить экран загрузки.
-    return false
+    return null
   }
 }
 
@@ -40,15 +50,15 @@ export function useAdminAuth(): AdminAuthState {
   const configured = isSupabaseConfigured
   const [loading, setLoading] = useState(configured)
   const [session, setSession] = useState<Session | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [role, setRole] = useState<AdminRole | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!supabase) return
     let cancelled = false
     // Монотонный токен: при быстрой смене сессий (onAuthStateChange может
-    // сработать несколько раз подряд) асинхронный checkIsAdmin старого вызова
-    // мог разрешиться ПОЗЖЕ нового и записать устаревший isAdmin. Применяем
+    // сработать несколько раз подряд) асинхронный fetchRole старого вызова
+    // мог разрешиться ПОЗЖЕ нового и записать устаревшую роль. Применяем
     // результат только если это всё ещё самый свежий apply().
     let token = 0
 
@@ -56,10 +66,10 @@ export function useAdminAuth(): AdminAuthState {
       if (cancelled) return
       const my = ++token
       try {
-        const admin = next ? await checkIsAdmin(next.user.id) : false
+        const next_role = next ? await fetchRole(next.user.id) : null
         if (cancelled || my !== token) return
         setSession(next)
-        setIsAdmin(admin)
+        setRole(next_role)
       } finally {
         if (!cancelled && my === token) setLoading(false)
       }
@@ -106,7 +116,8 @@ export function useAdminAuth(): AdminAuthState {
     configured,
     loading,
     session,
-    isAdmin,
+    isAdmin: role !== null,
+    role,
     error,
     signIn,
     signOut,

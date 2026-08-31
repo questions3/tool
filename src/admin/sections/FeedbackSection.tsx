@@ -12,6 +12,8 @@ import { IconThumbDown, IconThumbUp } from '../../components/icons'
 
 interface Props {
   lang: string
+  /** Супервайзер: читает отчёты, но не разбирает предложения. */
+  readOnly?: boolean
 }
 
 const PERIODS = [
@@ -32,7 +34,7 @@ const STATUSES: { id: SuggestionStatus; label: string }[] = [
  * Оператор на линии первым слышит, что формулировка не заходит. Раньше
  * этот сигнал терялся между звонками — здесь он собирается и разбирается.
  */
-export function FeedbackSection({ lang }: Props) {
+export function FeedbackSection({ lang, readOnly = false }: Props) {
   const [days, setDays] = useState(90)
   const [status, setStatus] = useState<SuggestionStatus>('new')
   const [rows, setRows] = useState<FeedbackRow[]>([])
@@ -216,7 +218,7 @@ export function FeedbackSection({ lang }: Props) {
               <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink">
                 {s.body}
               </p>
-              {status === 'new' && (
+              {status === 'new' && !readOnly && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     onClick={() => void triage(s.id, 'done')}
@@ -234,7 +236,7 @@ export function FeedbackSection({ lang }: Props) {
                   </button>
                 </div>
               )}
-              {status !== 'new' && (
+              {status !== 'new' && !readOnly && (
                 <button
                   onClick={() => void triage(s.id, 'new')}
                   disabled={busy === s.id}

@@ -4,6 +4,8 @@ import { pick } from '../../i18n/ui'
 
 interface Props {
   lang: string
+  /** Супервайзер: видит, что просрочено, но проверку не отмечает. */
+  readOnly?: boolean
 }
 
 /** Через сколько дней проверка считается просроченной. */
@@ -16,7 +18,7 @@ const STALE_DAYS = 90
  * переписать, не сверяя тарифы. Поэтому даты хранятся отдельно, а
  * «изменён после проверки» — отдельный сигнал, а не подмена проверки.
  */
-export function FreshnessSection({ lang }: Props) {
+export function FreshnessSection({ lang, readOnly = false }: Props) {
   const [rows, setRows] = useState<StaleRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,9 +80,10 @@ export function FreshnessSection({ lang }: Props) {
         <h2 className="text-lg font-semibold text-ink">Актуальность</h2>
         <p className="mt-1 text-sm text-ink-3">
           Скрипты устаревают вместе с условиями и тарифами, причём молча.
-          Кнопка «Проверено» отмечает, что текст сверили с тем, как всё
-          устроено сейчас. Просроченной проверка считается через {STALE_DAYS}{' '}
-          дней.
+          {readOnly
+            ? 'Просроченной проверка считается через '
+            : 'Кнопка «Проверено» отмечает, что текст сверили с тем, как всё устроено сейчас. Просроченной проверка считается через '}
+          {STALE_DAYS} дней.
         </p>
       </div>
 
@@ -119,7 +122,7 @@ export function FreshnessSection({ lang }: Props) {
                 <th className="px-4 py-2 font-medium">Этап</th>
                 <th className="px-4 py-2 font-medium">Языки</th>
                 <th className="px-4 py-2 font-medium">Проверен</th>
-                <th className="px-4 py-2" />
+                {!readOnly && <th className="px-4 py-2" />}
               </tr>
             </thead>
             <tbody>
@@ -139,6 +142,7 @@ export function FreshnessSection({ lang }: Props) {
                   <td className="px-4 py-2">
                     <Status row={r} />
                   </td>
+                  {!readOnly && (
                   <td className="px-4 py-2 text-right">
                     <button
                       onClick={() => void review(r.rebuttalId)}
@@ -148,6 +152,7 @@ export function FreshnessSection({ lang }: Props) {
                       {busy === r.rebuttalId ? '…' : 'Проверено'}
                     </button>
                   </td>
+                  )}
                 </tr>
               ))}
             </tbody>

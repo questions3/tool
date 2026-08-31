@@ -13,6 +13,7 @@ import { AgentsSection } from './sections/AgentsSection'
 import { EntriesSection } from './sections/EntriesSection'
 import { AnalyticsSection } from './sections/AnalyticsSection'
 import { TagsSection } from './sections/TagsSection'
+import { ExportSection } from './sections/ExportSection'
 import { FeedbackSection } from './sections/FeedbackSection'
 import { FreshnessSection } from './sections/FreshnessSection'
 import { ImportSection } from './sections/ImportSection'
@@ -46,8 +47,16 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'freshness', label: 'Актуальность' },
   { id: 'agents', label: 'Агенты' },
   { id: 'analytics', label: 'Аналитика' },
-  { id: 'import', label: 'Импорт' },
+  { id: 'import', label: 'Импорт и экспорт' },
 ]
+
+/**
+ * Что видит супервайзер. Руководителю группы нужны цифры, но не нужна
+ * кнопка «удалить», поэтому вкладки редактирования ему просто не
+ * показываются. Настоящий запрет живёт в политиках БД — это лишь чтобы
+ * он не упирался в отказ там, где всё равно ничего не сможет.
+ */
+const SUPERVISOR_TABS: Tab[] = ['analytics', 'feedback', 'freshness']
 
 /** Вкладки с локализованным контентом — для них показываем «Язык заполнения». */
 const CONTENT_TABS: Tab[] = [
@@ -108,11 +117,26 @@ export default function AdminApp() {
     )
   }
 
-  return <Dashboard onSignOut={auth.signOut} />
+  return (
+    <Dashboard onSignOut={auth.signOut} readOnly={auth.role === 'supervisor'} />
+  )
 }
 
-function Dashboard({ onSignOut }: { onSignOut: () => void }) {
-  const [tab, setTab] = useState<Tab>('languages')
+function Dashboard({
+  onSignOut,
+  readOnly,
+}: {
+  onSignOut: () => void
+  /** Супервайзер: отчёты видит, контент не трогает. */
+  readOnly: boolean
+}) {
+  const [tab, setTab] = useState<Tab>(readOnly ? 'analytics' : 'languages')
+  // Вкладку редактирования супервайзеру открывать незачем: там его
+  // встретит отказ базы, а не форма.
+  useEffect(() => {
+    if (readOnly && !SUPERVISOR_TABS.includes(tab)) setTab('analytics')
+  }, [readOnly, tab])
+
   const [activeLang, setActiveLang] = useState<string>(
     () => localStorage.getItem(LANG_KEY) ?? 'ru',
   )
@@ -137,7 +161,10 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           <div className="flex items-center gap-2.5">
             <LogoMark size={32} id="admin" />
             <div className="text-base font-semibold tracking-tight text-ink">
-              Convvy <span className="font-normal text-ink-3">Admin</span>
+              Convvy{' '}
+              <span className="font-normal text-ink-3">
+                {readOnly ? 'Отчёты' : 'Admin'}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -163,7 +190,10 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
             onChange={(e) => setTab(e.target.value as Tab)}
             className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-ink-2 outline-none focus:border-accent focus:ring-4 focus:ring-accent/12"
           >
-            {TABS.map((tb) => (
+            {(readOnly
+              ? SUPERVISOR_TABS.map((id) => TABS.find((t) => t.id === id)!)
+              : TABS
+            ).map((tb) => (
               <option key={tb.id} value={tb.id}>
                 {tb.label}
               </option>
@@ -171,7 +201,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           </select>
         </div>
         {/* Десктоп: ряд вкладок */}
-        <TabBar tab={tab} onSelect={setTab} />
+        <TabBar tab={tab} onSelect={setTab} readOnly={readOnly} />
         <div aria-hidden className="h-px w-full bg-line" />
 
         {CONTENT_TABS.includes(tab) && data.languages.length > 0 && (
@@ -274,17 +304,28 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                 objections={data.objections}
               />
             )}
-            {tab === 'feedback' && <FeedbackSection lang={activeLang} />}
-            {tab === 'freshness' && <FreshnessSection lang={activeLang} />}
+            {tab === 'feedback' && (
+              <FeedbackSection lang={activeLang} readOnly={readOnly} />
+            )}
+            {tab === 'freshness' && (
+              <FreshnessSection lang={activeLang} readOnly={readOnly} />
+            )}
             {tab === 'analytics' && <AnalyticsSection lang={activeLang} />}
             {tab === 'import' && (
-              <ImportSection
-                lang={activeLang}
-                languages={data.languages}
-                objections={data.objections}
-                stages={data.stages}
-                onChanged={data.reload}
-              />
+              <div className="flex flex-col gap-6">
+                <ImportSection
+                  lang={activeLang}
+                  languages={data.languages}
+                  objections={data.objections}
+                  stages={data.stages}
+                  onChanged={data.reload}
+                />
+                <ExportSection
+                  languages={data.languages}
+                  objections={data.objections}
+                  stages={data.stages}
+                />
+              </div>
             )}
           </>
         )}
@@ -322,7 +363,18 @@ function BackLink() {
  * выглядит как ошибка вёрстки, а не как «есть ещё» — поэтому край
  * затеняется ровно тогда, когда прокрутка действительно есть.
  */
-function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
+function TabBar({
+  tab,
+  onSelect,
+  readOnly,
+}: {
+  tab: Tab
+  onSelect: (t: Tab) => void
+  readOnly: boolean
+}) {
+  const tabs = readOnly
+    ? SUPERVISOR_TABS.map((id) => TABS.find((t) => t.id === id)!).filter(Boolean)
+    : TABS
   const ref = useRef<HTMLElement>(null)
   const [edges, setEdges] = useState({ left: false, right: false })
 
@@ -357,7 +409,7 @@ function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
         ref={ref}
         className="flex gap-x-1 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {TABS.map((tb) => (
+        {tabs.map((tb) => (
           <button
             key={tb.id}
             onClick={() => onSelect(tb.id)}
