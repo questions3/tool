@@ -21,6 +21,7 @@ import { FeedbackBar } from './components/FeedbackBar'
 import { NotePanel } from './components/NotePanel'
 import { SearchOverlay } from './components/SearchOverlay'
 import { WhatsNew } from './components/WhatsNew'
+import { HotkeysHelp } from './components/HotkeysHelp'
 import { HomeScreen } from './components/HomeScreen'
 import { SectionScreen } from './components/SectionScreen'
 
@@ -53,6 +54,7 @@ export default function App() {
   const [objectionId, setObjectionId] = useState<string | null>(null)
   const [stageId, setStageId] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // Список языков для переключателя (до загрузки из БД — фолбэк).
   const langOptions = languages.length ? languages : fallbackLanguages
@@ -81,6 +83,15 @@ export default function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setSearchOpen(true)
+        return
+      }
+      // «?» — справка по клавишам. В полях ввода не перехватываем.
+      const el = e.target as HTMLElement | null
+      const typing =
+        !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+      if (e.key === '?' && !typing) {
+        e.preventDefault()
+        setHelpOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -147,7 +158,11 @@ export default function App() {
         onLogout={handleLogout}
         onHome={goHome}
         onSearch={configured ? () => setSearchOpen(true) : undefined}
+        email={session?.user?.email ?? null}
+        onHotkeys={() => setHelpOpen(true)}
       />
+
+      {helpOpen && <HotkeysHelp lang={lang} onClose={() => setHelpOpen(false)} />}
 
       {searchOpen && (
         <SearchOverlay

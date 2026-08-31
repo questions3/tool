@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useAdminAuth } from '../hooks/useAdminAuth'
 import { LogoMark } from '../components/Logo'
+import { ProfileMenu } from '../components/ProfileMenu'
 import { IconExternal } from '../components/icons'
 import { useAdminData } from './useAdminData'
 import { AdminLogin } from './AdminLogin'
@@ -48,6 +49,15 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'agents', label: 'Агенты' },
   { id: 'analytics', label: 'Аналитика' },
   { id: 'import', label: 'Импорт и экспорт' },
+]
+
+/** Разделы, сгруппированные по смыслу: вертикальный список не упирается
+ * в ширину экрана и не требует прокрутки, как прежний ряд вкладок. */
+const GROUPS: { title: string; ids: Tab[] }[] = [
+  { title: 'Контент', ids: ['objections', 'stages', 'rebuttals', 'tags'] },
+  { title: 'Материалы', ids: ['presentation', 'service', 'market'] },
+  { title: 'Отчёты', ids: ['analytics', 'feedback', 'freshness'] },
+  { title: 'Настройки', ids: ['languages', 'agents', 'import'] },
 ]
 
 /**
@@ -118,17 +128,23 @@ export default function AdminApp() {
   }
 
   return (
-    <Dashboard onSignOut={auth.signOut} readOnly={auth.role === 'supervisor'} />
+    <Dashboard
+      onSignOut={auth.signOut}
+      readOnly={auth.role === 'supervisor'}
+      email={auth.session.user.email ?? null}
+    />
   )
 }
 
 function Dashboard({
   onSignOut,
   readOnly,
+  email,
 }: {
   onSignOut: () => void
   /** Супервайзер: отчёты видит, контент не трогает. */
   readOnly: boolean
+  email: string | null
 }) {
   const [tab, setTab] = useState<Tab>(readOnly ? 'analytics' : 'languages')
   // Вкладку редактирования супервайзеру открывать незачем: там его
@@ -136,6 +152,13 @@ function Dashboard({
   useEffect(() => {
     if (readOnly && !SUPERVISOR_TABS.includes(tab)) setTab('analytics')
   }, [readOnly, tab])
+
+  // Супервайзеру показываем только отчёты — группы фильтруются целиком,
+  // пустые не рисуются.
+  const visibleGroups = GROUPS.map((g) => ({
+    ...g,
+    ids: readOnly ? g.ids.filter((id) => SUPERVISOR_TABS.includes(id)) : g.ids,
+  })).filter((g) => g.ids.length > 0)
 
   const [activeLang, setActiveLang] = useState<string>(
     () => localStorage.getItem(LANG_KEY) ?? 'ru',
@@ -157,7 +180,7 @@ function Dashboard({
     <ConfirmProvider>
     <div className="min-h-dvh bg-canvas">
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
             <LogoMark size={32} id="admin" />
             <div className="text-base font-semibold tracking-tight text-ink">
@@ -167,46 +190,87 @@ function Dashboard({
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="flex items-center gap-1.5 rounded-md text-sm text-ink-3 transition-colors duration-200 hover:text-accent"
-            >
-              <IconExternal size={15} />
-              Приложение
-            </a>
-            <button
-              onClick={onSignOut}
-              className="rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink-2 hover:bg-canvas"
-            >
-              Выйти
-            </button>
-          </div>
+          <ProfileMenu
+            email={email}
+            subtitle={readOnly ? 'Супервайзер · только отчёты' : 'Администратор'}
+            items={[
+              {
+                label: 'Приложение оператора',
+                href: '/',
+                icon: <IconExternal size={16} />,
+              },
+              { label: 'Выйти', onClick: onSignOut, danger: true },
+            ]}
+          />
         </div>
-        {/* Мобильные: компактный селект вместо рваного переноса вкладок */}
-        <div className="px-4 pb-2 sm:hidden">
+        {/* Узкий экран: список разделов складывается в один селект. */}
+        <div className="px-4 pb-3 md:hidden">
           <select
             value={tab}
             onChange={(e) => setTab(e.target.value as Tab)}
+            aria-label="Раздел"
             className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium text-ink-2 outline-none focus:border-accent focus:ring-4 focus:ring-accent/12"
           >
-            {(readOnly
-              ? SUPERVISOR_TABS.map((id) => TABS.find((t) => t.id === id)!)
-              : TABS
-            ).map((tb) => (
-              <option key={tb.id} value={tb.id}>
-                {tb.label}
-              </option>
+            {visibleGroups.map((g) => (
+              <optgroup key={g.title} label={g.title}>
+                {g.ids.map((id) => (
+                  <option key={id} value={id}>
+                    {TABS.find((t) => t.id === id)?.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
-        {/* Десктоп: ряд вкладок */}
-        <TabBar tab={tab} onSelect={setTab} readOnly={readOnly} />
         <div aria-hidden className="h-px w-full bg-line" />
 
-        {CONTENT_TABS.includes(tab) && data.languages.length > 0 && (
-          <div className="bg-panel/60">
-            <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-1.5 px-4 py-2 sm:px-6">
+      </header>
+
+      <div className="mx-auto flex max-w-6xl gap-8 px-4 py-6 sm:px-6 sm:py-8">
+        {/* Боковое меню: вертикальный список не упирается в ширину и не
+            требует прокрутки, в отличие от прежнего ряда вкладок. */}
+        <nav className="hidden w-52 shrink-0 md:block">
+          <div className="sticky top-24 flex flex-col gap-5">
+            {visibleGroups.map((g) => (
+              <div key={g.title}>
+                <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-3">
+                  {g.title}
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {g.ids.map((id) => {
+                    const label = TABS.find((t) => t.id === id)?.label ?? id
+                    const active = tab === id
+                    return (
+                      <li key={id}>
+                        <button
+                          onClick={() => setTab(id)}
+                          aria-current={active ? 'page' : undefined}
+                          className={`relative w-full rounded-lg px-3 py-1.5 text-left text-sm transition-colors duration-200 ${
+                            active
+                              ? 'bg-accent-soft font-medium text-accent'
+                              : 'text-ink-2 hover:bg-panel hover:text-ink'
+                          }`}
+                        >
+                          {active && (
+                            <span
+                              aria-hidden
+                              className="brand-rule absolute inset-y-1.5 left-0 w-[3px] rounded-full"
+                            />
+                          )}
+                          {label}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </nav>
+
+        <main className="min-w-0 flex-1">
+          {CONTENT_TABS.includes(tab) && data.languages.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Язык заполнения
               </span>
@@ -224,12 +288,9 @@ function Dashboard({
                   {l.code.toUpperCase()}
                 </button>
               ))}
-            </div>
           </div>
         )}
-      </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         {data.loading && <p className="text-sm text-ink-3">Загрузка данных…</p>}
         {data.error && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -329,7 +390,8 @@ function Dashboard({
             )}
           </>
         )}
-      </main>
+        </main>
+      </div>
     </div>
     </ConfirmProvider>
   )
@@ -363,83 +425,3 @@ function BackLink() {
  * выглядит как ошибка вёрстки, а не как «есть ещё» — поэтому край
  * затеняется ровно тогда, когда прокрутка действительно есть.
  */
-function TabBar({
-  tab,
-  onSelect,
-  readOnly,
-}: {
-  tab: Tab
-  onSelect: (t: Tab) => void
-  readOnly: boolean
-}) {
-  const tabs = readOnly
-    ? SUPERVISOR_TABS.map((id) => TABS.find((t) => t.id === id)!).filter(Boolean)
-    : TABS
-  const ref = useRef<HTMLElement>(null)
-  const [edges, setEdges] = useState({ left: false, right: false })
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const update = () =>
-      setEdges({
-        left: el.scrollLeft > 4,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
-      })
-    update()
-    el.addEventListener('scroll', update, { passive: true })
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => {
-      el.removeEventListener('scroll', update)
-      ro.disconnect()
-    }
-  }, [])
-
-  // Активная вкладка не должна оставаться за краем после перезагрузки.
-  useEffect(() => {
-    ref.current
-      ?.querySelector('[aria-current="page"]')
-      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [tab])
-
-  return (
-    <div className="relative mx-auto hidden max-w-4xl sm:block">
-      <nav
-        ref={ref}
-        className="flex gap-x-1 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {tabs.map((tb) => (
-          <button
-            key={tb.id}
-            onClick={() => onSelect(tb.id)}
-            aria-current={tab === tb.id ? 'page' : undefined}
-            className={`relative -mb-px shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
-              tab === tb.id ? 'text-accent' : 'text-ink-3 hover:text-ink'
-            }`}
-          >
-            {tb.label}
-            {tab === tb.id && (
-              <span
-                aria-hidden
-                className="brand-rule absolute inset-x-2 bottom-0 h-[2px] rounded-full"
-              />
-            )}
-          </button>
-        ))}
-      </nav>
-      {edges.left && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white to-transparent"
-        />
-      )}
-      {edges.right && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white to-transparent"
-        />
-      )}
-    </div>
-  )
-}

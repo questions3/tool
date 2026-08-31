@@ -2,7 +2,8 @@ import type { Lang, Language } from '../types'
 import { t } from '../i18n/ui'
 import { LangToggle } from './LangToggle'
 import { Logo } from './Logo'
-import { IconSearch } from './icons'
+import { IconExternal, IconSearch } from './icons'
+import { ProfileMenu } from './ProfileMenu'
 
 interface Props {
   lang: Lang
@@ -12,6 +13,10 @@ interface Props {
   onHome: () => void
   /** Не передан — кнопка поиска не показывается (нет базы). */
   onSearch?: () => void
+  /** Кто вошёл. null — фолбэк-режим без базы. */
+  email?: string | null
+  /** Открыть справку по горячим клавишам. */
+  onHotkeys?: () => void
 }
 
 export function Header({
@@ -21,6 +26,8 @@ export function Header({
   onLogout,
   onHome,
   onSearch,
+  email = null,
+  onHotkeys,
 }: Props) {
   return (
     <header className="sticky top-0 z-20 bg-white/85 backdrop-blur-md">
@@ -45,12 +52,23 @@ export function Header({
             </button>
           )}
           <LangToggle lang={lang} languages={languages} onChange={onLangChange} />
-          <button
-            onClick={onLogout}
-            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink-2 transition-colors duration-200 hover:border-line-strong hover:bg-panel hover:text-ink"
-          >
-            {t('logout', lang)}
-          </button>
+          {/* Всё, что раньше висело кнопками, ушло под аватар: на узком
+              экране они вытесняли переключатель языка. */}
+          <ProfileMenu
+            email={email}
+            subtitle={t('appTagline', lang)}
+            items={[
+              ...(onHotkeys
+                ? [{ label: t('hotkeys', lang), onClick: onHotkeys }]
+                : []),
+              {
+                label: t('adminLink', lang),
+                href: '/admin',
+                icon: <IconExternal size={16} />,
+              },
+              { label: t('logout', lang), onClick: onLogout, danger: true },
+            ]}
+          />
         </div>
       </div>
       {/* Единственное место, где перелив работает как декор — и то в пиксель. */}
