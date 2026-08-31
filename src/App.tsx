@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Lang, Rebuttal, SectionId } from './types'
 import { useAuth } from './hooks/useAuth'
 import { useContent } from './hooks/useContent'
+import { useFavorites } from './hooks/useFavorites'
 import { hasLang, pick, t, type UiKey } from './i18n/ui'
 import { fallbackLanguages } from './data/content'
 import { withTimeout } from './lib/withTimeout'
@@ -160,6 +161,7 @@ function ObjectionsFlow({
   loadRebuttal: (o: string, s: string) => Promise<Rebuttal | null>
 }) {
   const { objections, stages, rebuttalIndex } = content
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   // Языковой фильтр: только переведённые на выбранный язык.
   const visibleObjections = objections.filter((o) => hasLang(o.label, lang))
@@ -222,6 +224,9 @@ function ObjectionsFlow({
               stepLabel={`${t('step', lang)} 1`}
               title={t('step1Title', lang)}
               columns={2}
+              searchable
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
               items={visibleObjections.map((o) => ({
                 id: o.id,
                 label: pick(o.label, lang),

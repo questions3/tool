@@ -15,6 +15,7 @@ import {
 } from '../../data/repository'
 import { hasLang, pick } from '../../i18n/ui'
 import { LocalizedInput } from '../components/LocalizedInput'
+import { AnswerScreen } from '../../components/AnswerScreen'
 
 interface Props {
   lang: string
@@ -90,6 +91,7 @@ export function RebuttalsSection({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [preview, setPreview] = useState(false)
   const loadedKey = useRef<string | null>(null)
 
   // Сбрасываем форму ТОЛЬКО при смене пары (возражение × этап). Рефетчи
@@ -326,15 +328,130 @@ export function RebuttalsSection({
           {saved && (
             <p className="mb-2 text-sm text-emerald-600">Сохранено ✓</p>
           )}
-          <button
-            onClick={save}
-            disabled={busy}
-            className="w-full rounded-lg bg-accent px-5 py-2.5 font-semibold text-white hover:bg-accent-hover disabled:opacity-60 sm:w-auto"
-          >
-            {busy ? 'Сохранение…' : 'Сохранить скрипт'}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={save}
+              disabled={busy}
+              className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+            >
+              {busy ? 'Сохранение…' : 'Сохранить скрипт'}
+            </button>
+            <button
+              onClick={() => setPreview(true)}
+              disabled={!objId || !stageId}
+              className="rounded-lg border border-slate-300 px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Предпросмотр
+            </button>
+          </div>
         </div>
       </div>
+
+      {preview && (
+        <PreviewModal
+          lang={lang}
+          langName={langName ?? lang.toUpperCase()}
+          objectionLabel={
+            pick(objections.find((o) => o.id === objId)?.label, lang) ||
+            '(без названия)'
+          }
+          stageLabel={
+            pick(stages.find((s) => s.id === stageId)?.label, lang) ||
+            '(без названия)'
+          }
+          rebuttal={{
+            objectionId: objId,
+            stageId,
+            answer: form.answer,
+            draft: form.isDraft,
+            branches: form.branches.filter(branchHasContent),
+          }}
+          onClose={() => setPreview(false)}
+        />
+      )}
     </section>
+  )
+}
+
+/**
+ * Предпросмотр «как увидит оператор».
+ *
+ * Рендерит тот же AnswerScreen, что и агентское приложение, по ТЕКУЩЕМУ
+ * состоянию формы — включая несохранённые правки. Так редактор видит
+ * реальный перенос строк, абзацы и порядок веток до публикации.
+ */
+function PreviewModal({
+  lang,
+  langName,
+  objectionLabel,
+  stageLabel,
+  rebuttal,
+  onClose,
+}: {
+  lang: string
+  langName: string
+  objectionLabel: string
+  stageLabel: string
+  rebuttal: Rebuttal
+  onClose: () => void
+}) {
+  // Esc закрывает — привычно для модалок.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const empty = !hasLang(rebuttal.answer, lang)
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Предпросмотр скрипта"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm sm:p-8"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-3xl rounded-xl bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold text-slate-900">
+              Так увидит оператор
+            </span>
+            <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent">
+              {langName}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Закрыть"
+            className="rounded-md px-2 py-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="max-h-[75vh] overflow-y-auto bg-slate-50 px-5 py-6">
+          {empty ? (
+            <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500">
+              Базовый скрипт на языке {langName} пуст — оператор увидит
+              «скрипт готовится».
+            </p>
+          ) : (
+            <AnswerScreen
+              lang={lang}
+              objectionLabel={objectionLabel}
+              stageLabel={stageLabel}
+              rebuttal={rebuttal}
+            />
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

@@ -326,6 +326,50 @@ export const ui = {
     de: 'Noch kein Inhalt vorhanden. Öffnen Sie das Admin-Panel.',
     es: 'Aún no hay contenido. Abre el panel de administración.',
   },
+  // Поиск и избранное (шаг выбора возражения)
+  searchPlaceholder: {
+    ru: 'Поиск по возражениям…',
+    pl: 'Szukaj obiekcji…',
+    en: 'Search objections…',
+    de: 'Einwände suchen…',
+    es: 'Buscar objeciones…',
+  },
+  searchNoResults: {
+    ru: 'Ничего не найдено. Измените запрос.',
+    pl: 'Nic nie znaleziono. Zmień zapytanie.',
+    en: 'Nothing found. Try a different query.',
+    de: 'Nichts gefunden. Andere Suche versuchen.',
+    es: 'No se encontró nada. Prueba otra búsqueda.',
+  },
+  searchClear: {
+    ru: 'Очистить',
+    pl: 'Wyczyść',
+    en: 'Clear',
+    de: 'Löschen',
+    es: 'Borrar',
+  },
+  favoritesGroup: {
+    ru: 'Избранное',
+    pl: 'Ulubione',
+    en: 'Favorites',
+    de: 'Favoriten',
+    es: 'Favoritos',
+  },
+  addFavorite: {
+    ru: 'В избранное',
+    pl: 'Do ulubionych',
+    en: 'Add to favorites',
+    de: 'Zu Favoriten',
+    es: 'Añadir a favoritos',
+  },
+  removeFavorite: {
+    ru: 'Убрать из избранного',
+    pl: 'Usuń z ulubionych',
+    en: 'Remove from favorites',
+    de: 'Aus Favoriten entfernen',
+    es: 'Quitar de favoritos',
+  },
+
   noScript: {
     ru: 'Скрипт для этой пары пока готовится. Вернитесь назад и выберите другое возражение или этап.',
     pl: 'Skrypt dla tej pary jest w przygotowaniu. Wróć i wybierz inną obiekcję lub etap.',
